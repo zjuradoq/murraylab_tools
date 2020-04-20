@@ -164,7 +164,7 @@ def read_supplementary_info(input_filename):
             info[title_line[i]] = dict()
         for line in reader:
             line = list(map(lambda s:s.strip(), line))
-            if line[0].strip() == "":
+            if len(line) == 0 or line[0].strip() == "":
                 continue
             for i in range(1, len(title_line)):
                 info[title_line[i]][line[0]] = line[i]
@@ -395,7 +395,6 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                     read_channel    = read_sets[read_name]
                     read_properties = read_channel[read_idx]
                     gain            = read_properties.gain
-                    print(line)
                     if len(info_parts) > 1:
                         if line[1] != "":
                             excitation = info_parts[1].split("[")[0]
@@ -757,7 +756,7 @@ def window_averages(df, start, end, units = "seconds",
             window_df = df[(df[col] >= start) & (df[col] <= end)]
         return window_df
 
-    grouped_df = df.groupby(group_cols)
+    grouped_df = df.groupby(group_cols, as_index = False)
     window_df = grouped_df.apply(pick_out_window)
 
     # Figure out which columns are numeric and which have strings.
@@ -1141,8 +1140,9 @@ class BiotekCellPlotter(object):
             ax1.plot(well_df["Time (hr)"], well_df[column],
                      color = well_spec.color, label = well_spec.label,
                      linewidth = linewidth)
+            vals = well_df[column].values
             highest_observed_y = max(highest_observed_y,
-                                     np.nanmax(well_df[column]))
+                                     vals[np.where(np.isfinite(vals))].max())
         ax1.set_xlabel("Time (hr)")
         if self.normalize_by_od:
             ax1.set_ylabel("%s/OD (gain %d)" % (self.channel, self.gain))
@@ -1152,7 +1152,8 @@ class BiotekCellPlotter(object):
         if split_plots:
             if show_legend:
                 handles, labels = ax1.get_legend_handles_labels()
-                ax1.legend(handles, labels)
+                ax1.legend(handles, labels, bbox_to_anchor = (1.2,1.2),
+                           loc = "upper left")
             if title:
                 plt.title(title, y = 1.08)
             fig.tight_layout()
@@ -1187,14 +1188,16 @@ class BiotekCellPlotter(object):
         if od_ymax:
             ax2.set_ylim(0, od_ymax)
         else:
-            ax2.set_ylim(0, np.nanmax(all_od_df.Measurement) * 1.1)
+            measurements = all_od_df.Measurement.values
+            ax2.set_ylim(0, measurements[np.where(np.isfinite(measurements))].max() * 1.1)
 
         if show_legend:
             if split_plots:
                 handles, labels = ax2.get_legend_handles_labels()
             else:
                 handles, labels = ax1.get_legend_handles_labels()
-            ax2.legend(handles, labels)
+            ax2.legend(handles, labels, bbox_to_anchor = (1.2,1.2),
+                       loc = "upper left")
         if title:
             plt.title(title, y = 1.08)
         fig.tight_layout()
@@ -1261,7 +1264,7 @@ def applyFunc(df, inputs, dofunc, output="Calculation", newunits="unknown"):
 
 def hmap_plt(indf,yaxis,xaxis,fixedinds=[],fixconcs=[],construct=None,\
             chan="RFP",axes=None,labels = (1,1), annot=True,vmin=0.6,vmax=0.9,
-            cmap="RdBu"):
+            cmap="RdBu",cbar_ax = None):
     '''
     2D heatmap using seaborn heatmap and matplotlib pivot_table. If you don't
     specify any columns, then it will by default average them!!
@@ -1295,13 +1298,17 @@ def hmap_plt(indf,yaxis,xaxis,fixedinds=[],fixconcs=[],construct=None,\
     #print(slicedf.head())
     pivtabl = pd.pivot_table(slicedf, index=yaxis, columns=xaxis, values='Measurement')
     #print(pivtabl)
-
+    if(cbar_ax == None):
+        cbar = False
+    else:
+        cbar = True
     outax = sns.heatmap(pivtabl,\
                 annot=annot,\
                 vmin = vmin,\
                 vmax = vmax,\
                 cmap= cmap, \
-                cbar = False, \
+                cbar = cbar, \
+                cbar_ax = cbar_ax, \
                 ax = axes)
     if(not labels[0]):
         outax.get_xaxis().set_visible(False)
@@ -1310,14 +1317,14 @@ def hmap_plt(indf,yaxis,xaxis,fixedinds=[],fixconcs=[],construct=None,\
 
 
 def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
-                                annot=False,vmin=None,vmax=None,cmap="RdBu"):
+        annot=False,vmin=None,vmax=None,cmap="RdBu",cbar=True,scalemult = 1):
     '''
     3D or 4D heatmap plot of dataframe
     Args:
-        dims - List of inducer names to vary. Max of four!
+        dims_in - List of inducer names to vary. Max of four!
         plotdf - DataFrame of endpoint data, of the kind produced by tidy_biotek_data.
-        fixedinds - list of fixed inducer names.
-        fixconcs - list of fixed concentrations, corresponding to fixedinds.
+        fixedinds_in - list of fixed inducer names.
+        fixconcs_in - list of fixed concentrations, corresponding to fixedinds.
         constructs - list of constructs to plot. You can put multiple constructs
                     to plot here, but then dims should be only three elements long,
                     since constructs constitutes another dimension
@@ -1349,8 +1356,9 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     logiclist = logiclist&loglist2
     subdf = plotdf[logiclist]
     #print(subdf.head())
-    maxval = max(subdf.Measurement)
-    minval = min(subdf.Measurement)
+    measurements = subdf.Measurement.values
+    maxval = measurements[np.where(np.isfinite(measurements))].max()
+    minval = measurements[np.where(np.isfinite(measurements))].min()
     if(vmin == None):
         vmin = minval
     if(vmax == None):
@@ -1361,15 +1369,27 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     else:
         fixedinds += ["Construct"]#,"ATC"]
         fixconcs += constructs#,250]
-    enddims = range(len(dims[2:])) #cut out the first two dimensions
-    axiscombs = allcomb(dimlist[2:]) #all combinations of conditions
-    plotpos = allcomb([range(len(a)) for a in dimlist[2:]]) #positions on the graph grid that above will go
-    rows = len(dimlist[2])
+    if(len(dims)>2):
+        #a 3d plot involves multiple plots, but a 2d plot is just a single heatmap.
+        #i guess "d" in this case indicates the conditions. Of course a "2d" plot
+        #is still 3d because for each of the two conditions there is a "measurement".
+        enddims = range(len(dims[2:])) #cut out the first two dimensions
+        axiscombs = allcomb(dimlist[2:]) #all combinations of conditions
+        plotpos = allcomb([range(len(a)) for a in dimlist[2:]]) #positions on the graph grid that above will go
+        rows = len(dimlist[2]) #number of constructs
+    else:
+        #this is the case where we are plotting only a single heatmap
+        enddims = []
+        axiscombs = [[]]
+        plotpos = [[0,0]]
+        rows = 1
     if(len(dimlist)>=4):
         cols = len(dimlist[3])
     else:
         cols = 1
-    fig, axes = plt.subplots(cols, rows,figsize=(rows*2,cols*2))
+    fig, axes = plt.subplots(cols, rows,figsize=(rows*2*scalemult,cols*2*scalemult))
+    if(cbar):
+        cbar_ax = fig.add_axes([.91, .15, .03, .7])
     #four dimensions is about the best we can do
     #this next part populates the axes list with blanks so that the
     #plotting code still runs like a 4x4 figure
@@ -1401,15 +1421,21 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
         if(not(c in dims+fixedinds)):
             notspecified+=[c]
     for ind in zip(fixedinds,fixconcs):
-        titstr+= "; "+ind[0]+" is "+str(ind[1])
+        if(str(ind[1])!=""):
+            titstr+= "; "+ind[0]+" is "+str(ind[1])
     if(len(notspecified)>0):
         for nsind in notspecified:
             titstr+= "; aggregate of " +nsind
     fig.suptitle(titstr, fontsize=16)
 
     rowcount = 0
+    didcbar = 1
+    if(cbar_ax != None):
+        didcbar = 0
     for colax in axes:
         colcount = 0
+        if(type(colax)!= list):
+            colax = [colax]
         for curax in colax:
             #iterate through each plot basically
 
@@ -1420,7 +1446,10 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
             if(plotlocation in plotpos):#if we are populating this plot:
                 plotind = plotpos.index(plotlocation)
                 curconcs = axiscombs[plotind]
-
+                cbar_ax_to_hmap = None
+                if(not didcbar):
+                    cbar_ax_to_hmap = cbar_ax
+                    didcbar = 1
                 hmap_plt(plotdf,dims[0],dims[1],\
                          fixedinds+dims[2:],\
                          fixconcs+curconcs,\
@@ -1430,16 +1459,20 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
                         annot=annot,\
                         vmin=vmin,\
                         vmax=vmax,\
+                        cbar_ax=cbar_ax_to_hmap,\
                         cmap=cmap)
                 if(len(dims) == 4):
-                    if(dims[2:][1]=="Construct"):
+                    if(dims[3]=="Construct"):
                         curax.set_ylabel(str(curconcs[1])+"\n"+dims[0])
                     else:
                         curax.set_ylabel(str(curconcs[1])+" of "+dims[2:][1]+"\n"+dims[0])
-                if(dims[2:][0]=="Construct"):
-                    curax.set_xlabel(dims[1]+"\n"+str(curconcs[0]))
-                else:
-                    curax.set_xlabel(dims[1]+"\n"+str(curconcs[0])+" of "+dims[2:][0])
+                elif(len(dims)==3):
+                    if(dims[2]=="Construct"):
+                        curax.set_xlabel(dims[1]+"\n"+str(curconcs[0]))
+                    else:
+                        curax.set_xlabel(dims[1]+"\n"+str(curconcs[0])+" of "+dims[2:][0])
+                elif(len(dims)==2):
+                    curax.set_xlabel(dims[1]+"\n")
             colcount+=1
         rowcount+=1
 CellSpec = namedtuple("CellSpec", ['well_name', 'color', 'label'])
