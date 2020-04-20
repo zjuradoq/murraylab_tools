@@ -164,7 +164,7 @@ def read_supplementary_info(input_filename):
             info[title_line[i]] = dict()
         for line in reader:
             line = list(map(lambda s:s.strip(), line))
-            if line[0].strip() == "":
+            if len(line) == 0 or line[0].strip() == "":
                 continue
             for i in range(1, len(title_line)):
                 info[title_line[i]][line[0]] = line[i]
@@ -264,6 +264,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
             #           4.2.1) Rewrite data on that line to tidy data file,
             #                   converting to uM if possible.
             read_sets = dict()
+            read_set_idxs = dict()
             next_line = ""
             while True:
                 if next_line != "":
@@ -347,6 +348,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                                     break
                             if not read_name in read_sets:
                                 read_sets[read_name] = []
+                                read_set_idxs[read_name] = 0
                             read_sets[read_name].append(ReadSet(read_name,
                                                             excitation,
                                                             emission, gain))
@@ -355,6 +357,9 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
             # Read data blocks
             # Find a data block
             while line != None:
+                if len(line) == 0:
+                    line = next(reader, None)
+                    continue
                 info = line[0].strip()
                 if info == "":
                     line = next(reader, None)
@@ -378,16 +383,26 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                     else:
                         info_parts = [info]
                         read_name = ""
+                    if read_name not in read_sets:
+                        line = next(reader, None)
+                        continue
                     if not info.endswith(']'):
-                        read_idx = 0
+                        read_idx = read_set_idxs[read_name]
+                        read_set_idxs[read_name] += 1
                     else:
                         read_idx = int(info.split('[')[-1][:-1]) - 1
-                    read_properties = read_sets[read_name][read_idx]
+
+                    read_channel    = read_sets[read_name]
+                    read_properties = read_channel[read_idx]
                     gain            = read_properties.gain
                     if len(info_parts) > 1:
-                        excitation = info_parts[1].split("[")[0].split(",")[0]
+                        if line[1] != "":
+                            excitation = info_parts[1].split("[")[0]
+                            emission = line[1].split("[")[0]
+                        else:
+                            excitation = info_parts[1].split("[")[0].split(",")[0]
+                            emission   = info_parts[1].split("[")[0].split(",")[1]
                         excitation = int(excitation)
-                        emission   = info_parts[1].split("[")[0].split(",")[1]
                         emission   = int(emission)
                     else:
                         excitation      = read_properties.excitation
@@ -398,9 +413,14 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                 well_names = line
                 # Data lines
                 for line in reader:
-                    if line[1] == "":
+                    idx = 0
+                    while idx < len(line):
+                        if line[idx] != "":
+                            raw_time = line[idx]
+                            break
+                        idx += 1
+                    if idx == len(line):
                         break
-                    raw_time = line[1]
                     time_parts = raw_time.split(':')
                     days=0
                     minutes=int(time_parts[1])
@@ -736,7 +756,7 @@ def window_averages(df, start, end, units = "seconds",
             window_df = df[(df[col] >= start) & (df[col] <= end)]
         return window_df
 
-    grouped_df = df.groupby(group_cols)
+    grouped_df = df.groupby(group_cols, as_index = False)
     window_df = grouped_df.apply(pick_out_window)
 
     # Figure out which columns are numeric and which have strings.
@@ -858,7 +878,8 @@ def moving_average_fit(df, column = "Measurement", window_size = 1,
     grouped_df = df.groupby(group_cols)
     smoothed_groups = []
     for name, group in grouped_df:
-        group.sort_values("Time (sec)", ascending = True, inplace = True)
+        group = group.sort_values("Time (sec)", ascending = True,
+                                  inplace = False)
 
         # Figure out the window size, in frames.
         if units == "index":
@@ -928,8 +949,9 @@ def smoothed_derivatives(df, column = "Measurement", window_size = 1,
         if column == "Measurement":
             deriv_name = "%s (%s/sec)" % (column, group.Units.unique()[0])
             group.Units = deriv_name
+        group = group.copy()
         group[column] = np.gradient(group[column].to_numpy(),
-                                        group["Time (sec)"].to_numpy())
+                                    group["Time (sec)"].to_numpy())
         deriv_df = deriv_df.append(group)
     return deriv_df
 
@@ -1068,7 +1090,7 @@ class BiotekCellPlotter(object):
 
     def plot(self, title = None, column = "Measurement", split_plots = False,
              filename = None, show = True, figsize = (8, 4), linewidth = 1,
-             show_legend = True):
+             ymax = None, od_ymax = None, show_legend = True):
         '''
         Plot/show/save the figure.
 
@@ -1090,6 +1112,12 @@ class BiotekCellPlotter(object):
             figsize -- 2-tuple of the size of the figure. Is passed directly
                         to figure creation.
             linewidth -- Default 1. Passed to plot commands.
+            ymax -- Optional flag to set a maximum y limit on the fluorescence
+                    axis.
+            od_ymax -- Optional flag to set a maximum y limit on the
+                        OD axis.
+            show_legend -- Boolean that determines whether the legend is
+                            displayed.
         '''
         plt.clf()
 
@@ -1106,11 +1134,15 @@ class BiotekCellPlotter(object):
         # Plot out all of the fluorescence data, keeping track of the largest
         # plotted measurement.
         fig, ax1 = plt.subplots(figsize = figsize)
+        highest_observed_y = 0
         for well_spec in self.well_list:
             well_df = norm_df[norm_df.Well == well_spec.well_name]
             ax1.plot(well_df["Time (hr)"], well_df[column],
                      color = well_spec.color, label = well_spec.label,
                      linewidth = linewidth)
+            vals = well_df[column].values
+            highest_observed_y = max(highest_observed_y,
+                                     vals[np.where(np.isfinite(vals))].max())
         ax1.set_xlabel("Time (hr)")
         if self.normalize_by_od:
             ax1.set_ylabel("%s/OD (gain %d)" % (self.channel, self.gain))
@@ -1120,7 +1152,8 @@ class BiotekCellPlotter(object):
         if split_plots:
             if show_legend:
                 handles, labels = ax1.get_legend_handles_labels()
-                ax1.legend(handles, labels)
+                ax1.legend(handles, labels, bbox_to_anchor = (1.2,1.2),
+                           loc = "upper left")
             if title:
                 plt.title(title, y = 1.08)
             fig.tight_layout()
@@ -1148,12 +1181,23 @@ class BiotekCellPlotter(object):
         ax2.set_ylabel(self.od_channel)
         ax2.set_xlabel("Time (hr)")
 
+        if ymax:
+            ax1.set_ylim(0, ymax)
+        else:
+            ax1.set_ylim(0, highest_observed_y * 1.1)
+        if od_ymax:
+            ax2.set_ylim(0, od_ymax)
+        else:
+            measurements = all_od_df.Measurement.values
+            ax2.set_ylim(0, measurements[np.where(np.isfinite(measurements))].max() * 1.1)
+
         if show_legend:
             if split_plots:
                 handles, labels = ax2.get_legend_handles_labels()
             else:
                 handles, labels = ax1.get_legend_handles_labels()
-            ax2.legend(handles, labels)
+            ax2.legend(handles, labels, bbox_to_anchor = (1.2,1.2),
+                       loc = "upper left")
         if title:
             plt.title(title, y = 1.08)
         fig.tight_layout()
@@ -1312,8 +1356,9 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     logiclist = logiclist&loglist2
     subdf = plotdf[logiclist]
     #print(subdf.head())
-    maxval = max(subdf.Measurement)
-    minval = min(subdf.Measurement)
+    measurements = subdf.Measurement.values
+    maxval = measurements[np.where(np.isfinite(measurements))].max()
+    minval = measurements[np.where(np.isfinite(measurements))].min()
     if(vmin == None):
         vmin = minval
     if(vmax == None):

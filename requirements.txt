@@ -1,9 +1,10 @@
-
--e git+git://github.com/dr3y/dnaplotlib.git@master#egg=dnaplotlib
+--editable git+git://github.com/dr3y/dnaplotlib.git@master#egg=dnaplotlib
 scipy>=1.0
 pydna
-matplotlib
 biopython==1.70
 xlrd>=1.0.0
 pandas>=0.24
-numpy
+matplotlib>=3.0
+seaborn
+ipywidgets
+ipython
