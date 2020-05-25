@@ -1,33 +1,35 @@
 Materials used:
-master_mix:
-	total volume: 118.00 uL
-	Tubes of extract needed: 0
-	Tubes of buffer needed: 0
-	Master Mix (including 10% excess):
-		87.10 uL eSC3 Buffer (1.000 nM)
-		40.99 uL eSC3 Extract (1.000 nM)
-		1.71 uL Helper Protein (100.000 nM)
+
 water:
-	stock concentration: 1.00 nM
+	stock concentration: 1.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x10d718588>
 	total volume: 40.38 uL
 Positive Control:
-	stock concentration: 8.99 nM (19.00 ng/uL)
+	stock concentration: 8.99 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x10d718588> (19.00 ng/uL)
 	total volume: 22.10 uL
 RFP Plasmid:
-	stock concentration: 94.04 nM (189.00 ng/uL)
+	stock concentration: 94.04 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x10d718588> (189.00 ng/uL)
 	total volume: 21.93 uL
 CFP Plasmid:
-	stock concentration: 67.91 nM (125.00 ng/uL)
+	stock concentration: 67.91 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x10d718588> (125.00 ng/uL)
 	total volume: 22.35 uL
 GFP Plasmid:
-	stock concentration: 72.47 nM (149.00 ng/uL)
+	stock concentration: 72.47 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x10d718588> (149.00 ng/uL)
 	total volume: 22.25 uL
+Master Mix (including 10% excess):
+	Tubes of extract needed: 2
+	Tubes of buffer needed: 3
+txtl_mm:
+	Stock Concentration: 1 x
+	Total Volume: 118000.00
+		37.26 uL Extract (1.000 )
+		79.18 uL Buffer (1.000 )
+		1.55 uL Helper Protein (100.000 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x10d718588>)
 
 On the source plate:
-	Add 65.0uL of master_mix in well: D13
-	Add 53.0uL of master_mix in well: D14
-	Add 40.375uL of water in well: D16
-	Add 22.1uL of Positive Control in well: D18
-	Add 21.925uL of RFP Plasmid in well: D20
-	Add 22.35uL of CFP Plasmid in well: D22
-	Add 22.25uL of GFP Plasmid in well: D24
+	Add 40.375 uL of water in well: H16
+	Add 22.1 uL of Positive Control in well: H18
+	Add 21.925 uL of RFP Plasmid in well: H20
+	Add 22.35 uL of CFP Plasmid in well: H22
+	Add 22.25 uL of GFP Plasmid in well: H24
+	Add 65.0 uL of txtl_mm in well: I03
+	Add 53.0 uL of txtl_mm in well: I04

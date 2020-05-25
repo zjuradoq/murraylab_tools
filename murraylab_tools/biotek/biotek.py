@@ -177,7 +177,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
     '''
     Convert the raw output from a Biotek plate reader into tidy data.
     Optionally, also adds columns of metadata specified by a "supplementary
-    file", which is a CSV spreadsheet mapping well numbers to metadata.
+    file", which is a CSV or Exel spreadsheet mapping well numbers to metadata.
 
     Arguments:
         --input_filename: Name of a Biotek output file. Data file should be
@@ -215,7 +215,6 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
     if volume == None:
         print("Assuming default volume 10 uL. Make sure this is what you want!")
         volume = 10.0
-
     supplementary_data = dict()
     if supplementary_filename:
         supplementary_data = read_supplementary_info(supplementary_filename)
@@ -1117,7 +1116,7 @@ class BiotekCellPlotter(object):
             od_ymax -- Optional flag to set a maximum y limit on the
                         OD axis.
             show_legend -- Boolean that determines whether the legend is
-                            displayed.
+                            # displayed.
         '''
         plt.clf()
 

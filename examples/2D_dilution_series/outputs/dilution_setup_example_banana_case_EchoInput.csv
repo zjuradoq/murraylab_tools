@@ -1,6 +1,55 @@
 Source Plate,Source Plate Type,Source Well,Sample ID,Destination Plate Name,Destination Well,Transfer Volume,Sample Comment
-Source[1],384PP_AQ_BP,K16,Cavendish,Nunc_384_black_glassbottom,D2,100,Actual concentration: 1.00 nM
-Source[1],384PP_AQ_BP,K16,Cavendish,Nunc_384_black_glassbottom,D3,100,Actual concentration: 1.00 nM
-Source[1],384PP_AQ_BP,K16,Cavendish,Nunc_384_black_glassbottom,E2,100,Actual concentration: 1.00 nM
-Source[1],384PP_AQ_BP,K16,Cavendish,Nunc_384_black_glassbottom,E3,100,Actual concentration: 1.00 nM
-Source[1],384PP_AQ_BP,K22,Gros Michel,Nunc_384_black_glassbottom,F5,300,Actual concentration: 3.00 nM
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,E2,75,Actual concentration: 1.04
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,E3,75,Actual concentration: 1.04
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,E4,75,Actual concentration: 1.04
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,E5,75,Actual concentration: 1.04
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,E6,75,Actual concentration: 1.04
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,F2,150,Actual concentration: 2.09
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,F3,150,Actual concentration: 2.09
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,F4,150,Actual concentration: 2.09
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,F5,150,Actual concentration: 2.09
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,F6,150,Actual concentration: 2.09
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,G2,225,Actual concentration: 3.13
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,G3,225,Actual concentration: 3.13
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,G4,225,Actual concentration: 3.13
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,G5,225,Actual concentration: 3.13
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,G6,225,Actual concentration: 3.13
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,H2,300,Actual concentration: 4.17
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,H3,300,Actual concentration: 4.17
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,H4,300,Actual concentration: 4.17
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,H5,300,Actual concentration: 4.17
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,H6,300,Actual concentration: 4.17
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,I2,350,Actual concentration: 4.87
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,I3,350,Actual concentration: 4.87
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,I4,350,Actual concentration: 4.87
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,I5,350,Actual concentration: 4.87
+Source[1],384PP_AQ_BP,D11,GFP Plasmid,Nunc_384_black_glassbottom,I6,350,Actual concentration: 4.87
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,D3,200,Actual concentration: 20.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,D4,400,Actual concentration: 40.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,D5,600,Actual concentration: 60.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,D6,800,Actual concentration: 80.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,E3,200,Actual concentration: 20.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,E4,400,Actual concentration: 40.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,E5,600,Actual concentration: 60.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,E6,800,Actual concentration: 80.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,F3,200,Actual concentration: 20.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,F4,400,Actual concentration: 40.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,F5,600,Actual concentration: 60.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,F6,800,Actual concentration: 80.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,G3,200,Actual concentration: 20.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,G4,400,Actual concentration: 40.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,G5,600,Actual concentration: 60.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,G6,800,Actual concentration: 80.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,H3,200,Actual concentration: 20.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,H4,400,Actual concentration: 40.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,H5,600,Actual concentration: 60.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,H6,800,Actual concentration: 80.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,I3,200,Actual concentration: 20.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,I4,400,Actual concentration: 40.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,I5,600,Actual concentration: 60.00
+Source[1],384PP_AQ_BP,D23,ATc,Nunc_384_black_glassbottom,I6,800,Actual concentration: 80.00
+Source[1],384PP_AQ_BP,E04,Cavendish,Nunc_384_black_glassbottom,D2,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,E04,Cavendish,Nunc_384_black_glassbottom,D3,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,E04,Cavendish,Nunc_384_black_glassbottom,E2,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,E04,Cavendish,Nunc_384_black_glassbottom,E3,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,E06,Gros Michel,Nunc_384_black_glassbottom,F5,300,Actual concentration: 3.00
