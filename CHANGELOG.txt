@@ -1,2 +1,30 @@
 v0.1 -> v1.0:
-    *
+
+This is an INTERFACE-CHANGING UPDATE to the Echo subpackage, which breaks backwards compatibility. Important changes are listed below; example notebooks have been updated accordingly:
+
+* EchoRun.build_dilution_series renamed to EchoRun.dilution_series. dilution_series no longer has "fill_with_water" or "negative_control" options.
+* Addition of TX-TL, master mix, and water in programmatic has been completely decoupled from the dilution_series function of EchoRun. Calling dilution_series now adds ONLY the diluted substances. Master mix and water should be added separately.
+* Creating a dilution series no longer adds a negative control well.
+* Mixture renamed to MixtureMaterial.
+* MixtureMaterial's (previously Mixture's) constructor has been modified to now take a "units" argument (like SouceMaterial) and a rxn_vol argument (much like TXTLMasterMix), and to no longer take a "plate" argument.
+* MasterMix object deprecated. Use TXTLMasterMix or MixtureMaterial instead.
+* TXTLMasterMix should act more like a MixtureMaterial. Conceptually, it is now a MixtureMaterial with built-in buffer and extract materials, which are treated specially in human-readable text outputs.
+* TXTLMasterMix no longer takes an "add_txtl" argument in its constructor (master mixes that do not contain TX-TL should be MixtureMaterials).
+* MixtureMaterial has assumed many of the responsibilities of TXTLMasterMix, and now has one_rxn_recipe and current_vol_per_rxn functions. Conceptually, MixtureMaterial now represents a mixture of reagents that will be used as a material on a source plate. It now knows about the final volume of reactions it will be pipetted to.
+* "units" argument of various functions of AbstractReaction and its subclasses renamed to "dimensionality".
+* Changed EchoSourceMaterial's constructor:
+    * No longer takes a SourcePlate -- SourcePlates are added dynamically under-the-hood, so the user should never have to set a SourcePlate manually.
+    * "length" argument is now optional, with default 0.
+    * Added an optional "units" argument, which can be used to specify the units of the EchoSourceMaterial's concentration. Defaults to "". (This is used to control human-readable output only, and does not affect calculations.)
+* Various human-readable outputs now give concentrations in units specified by each EchoSourceMaterial, instead of defaulting to nM.
+* Added an "add_material_to_all" function to EchoRun, which adds a material to every well that the EchoRun has used before calling it.
+* The "add_material" function of MixtureMaterial and its subclasses can now use dimensionality of "final_concentration", which is the concentration of the added material in the *final reaction* (as opposed to "concentration", which is units of concentration *in the mix* before adding it to the final reaction). MixtureMaterials can use units of "final_concentration" or "concentration"/"fraction"/"volume", but not both.
+* The "get_volume" and "current_vol" functions of AbstractMixture and its subclasses have been standardized. "get_volume" always returns the final volume that the object expects to have, while "current_vol" returns the volume that the object calculates itself to have according to its current list of ingredients.
+* Responsibility for printing information about a single SourceMaterial (in the experimental description file) has been moved from EchoRun to the SourceMaterial. Every SourceMaterial object has a "text_recipe" function that returns that text description.
+* EchoRun objects no longer have a master mix. Master mixes (MixtureMaterial objects) should be added just like any other material, usually with "EchoRun.add_material_to_well", "EchoRun.add_material_to_block", or "EchoRun.add_material_to_all". Accordingly, EchoRun no longer has "add_master_mix" or "remove_master_mix" functions.
+* Added EchoRun.add_material_to_all,
+* EchoRun.add_material_to_well (and other "add_materials_to_X" functions) may no longer take the "final_concentration" argument if the material added is a MixtureMaterial, in which case the amount of MixtureMaterial to be added will be calculated based on the MixtureMaterial's current_vol_per_rxn function.
+* The arguments of "EchoRun.add_material_to_well/block/all" have been rearranged so that "final_conc" is now the first keyword argument, coming after named arguments (i.e., order is now self -> material -> well(s) -> concentration -> pipette_by_hand).
+* AbstractMixture's "add_volume_of_material" function is deprecated.
+* AbstractMixture now has a "_convert_to_vol" function, which does some of the volume calculations previously performed inside get_material_volumes.
+*
