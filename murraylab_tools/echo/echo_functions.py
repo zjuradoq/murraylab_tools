@@ -11,8 +11,7 @@ from ..utils import *
 from datetime import date as pydate
 
 __all__ = ["dna2nM_convert", "echo_round", "AbstractMixture", "WellReaction",
-           "Mixture",
-           "MasterMix", "TXTLMasterMix", "SourcePlate", "EchoSourceMaterial",
+           "MixtureMaterial", "TXTLMasterMix", "SourcePlate", "EchoSourceMaterial",
            "Pick", "EchoRun", "DestinationPlate", "dead_volume", "max_volume",
            "usable_volume"]
 
@@ -36,7 +35,7 @@ def echo_round(x, base = 25):
 
     Arguments:
         x - Desired volume.
-        base - Size of an Echo drop, in units of the volume (default nL).
+        base - Size of an Echo drop, in dimensionality of the volume (default nL).
 
     Returns: x rounded to the nearest multiple of base.
     '''
@@ -113,20 +112,28 @@ class EchoSourceMaterial():
     much material has been used and where they need to go. When requested,
     will commit to wells (assigned by a SourcePlate) and send a list of picks.
     '''
-    def __init__(self, name, concentration, length = None, plate = None):
+    def __init__(self, name, concentration, length = 0, units = None):
         '''
         name -- A string to associate with the name of this material.
-        concentration -- the concentration of this material, in ng/uL if this is
-                         a double-stranded DNA material, or in nM if this is
-                         anything else
+        concentration -- the concentration of this material, in units given by
+                            "units".
         length -- Length of the DNA in bp, if material is double-stranded DNA.
-                  Otherwise, length should be 0.
-        wells -- A list of source wells for the material.
-        plate -- Name of the plate from which this material comes.
+                  Otherwise, length should be 0. If a (nonzero) length is given,
+                  then units are assumed to be ng/uL, and are immediately
+                  converted to nM.
+        units -- Name of the units of this material, e.g. "nM", "x", or "ng/uL".
+                    This argument is ignored if length != 0. This is only for
+                    human readability purposes, and does not affect
+                    calculations.
+
         '''
         self.name   = name
         self.length = length
-        self.plate  = plate
+        self.plate  = None
+        if units is None:
+            self.units = ""
+        else:
+            self.units  = units
 
         # Check for commas in the name.
         if "," in self.name:
@@ -155,7 +162,7 @@ class EchoSourceMaterial():
             conc_string = "ng/µL"
             conc = self.ng_per_ul
         else:
-            conc_string = "nM"
+            conc_string = self.units
             conc = self.nM
         return "%s (%.3f %s)" % (self.name, conc, conc_string)
 
@@ -182,7 +189,6 @@ class EchoSourceMaterial():
                 self.echo_volume_requested += actual_volume
                 self.picklist.append(Pick(self, None, destination_well,
                                           actual_volume))
-
 
     def request_picklist(self):
         '''
@@ -232,6 +238,15 @@ class EchoSourceMaterial():
             self.well_volumes[self.current_well] += pick.volume
             yield pick
 
+    def text_recipe(self):
+        ret_str = "\n%s:\n\tstock concentration: %.2f %s" % \
+                    (self.name, self.nM, self.units)
+        if self.length > 0:
+            ret_str += " (%.2f ng/uL)" % self.concentration
+        ret_str += "\n\ttotal volume: %.2f uL" % \
+                    (self.total_volume_requested / 1000.0)
+        return ret_str
+
 class EchoRun():
     '''
     Defines and prints an Echo picklist from one of several algorithms.
@@ -245,8 +260,7 @@ class EchoRun():
                     TX-TL setup experiments, but not for association spreadsheet
                     experiments.
     '''
-    def __init__(self, rxn_vol = 10000, DPtype = None, plate = None,
-                 master_mix = None):
+    def __init__(self, rxn_vol = 10000, DPtype = None, plate = None):
         # The user gives the reaction volume in microliters; store it in nL
         self.rxn_vol = rxn_vol
 
@@ -273,7 +287,6 @@ class EchoRun():
         self.material_dict   = dict()
         self.reactions       = dict()
         self.picklist        = []
-        self.add_master_mix(master_mix) # This will set make_master_mix
         self.fill_material   = None
 
     def define_plate(self, SPname, SPtype, DPtype):
@@ -284,42 +297,12 @@ class EchoRun():
         self.SPtype = SPtype
         self.DPtype = DPtype
 
-    def add_master_mix(self, master_mix):
-        '''
-        Add a master mix to all reactions.
-
-        master_mix: A TXTLMasterMix object describing the new master mix.
-        '''
-        self.make_master_mix = master_mix != None
-        if self.make_master_mix:
-            if master_mix.rxn_vol != self.rxn_vol:
-                raise ValueError("Assigned MasterMix with reaction volume " + \
-                                 str(master_mix.rxn_vol) + "nL; this EchoRun "+\
-                                 " object has reaction volume " +             \
-                                 str(self.rxn_vol) + "; reaction volumes must"+\
-                                 " match.")
-            self.material_dict['txtl_mm'] = master_mix
-
-    def remove_master_mix(self):
-        '''
-        Blanks the current master mix.
-        '''
-        self.material_dict['txtl_mm'] = None
-        self.make_master_mix          = False
-
     def add_material(self, material):
         '''
         Add a material to the materials list for this EchoRun, if an identical
         material is not already in the list. Attempting to add a material with
         the same name but different properties as another material already in
         this object's material list will raise a ValueError.
-
-        Doesn't handle objects of class TXTLMasterMix or other subclasses of
-        EchoSourceMaterial. Add these to the master mix manually, i.e.,
-
-        self.master_mix.append(material)
-
-        after whatever check is required to avoid duplications.
 
         Returns 0 if the material was added successfully; returns 1 if an
         identical material was already in this EchoRun object's material list,
@@ -330,16 +313,25 @@ class EchoRun():
             if prior_mat.name == material.name \
                and prior_mat.concentration == material.concentration \
                and prior_mat.length == material.length \
-               and prior_mat.plate  == material.plate:
+               and prior_mat.units  == material.units \
+               and prior_mat.plate == material.plate:
                 return 1
             else:
-                raise ValueError("Tried to add material " + material.name +    \
-                    " with concentration " + str(material.concentration) +     \
-                    ", length " + str(material.length) + ", and plate " +      \
-                     str(material.plate) + "; that material already exists " + \
-                     "with concentration " + str(prior_mat.concentration) +    \
-                     ", length " + str(prior_mat.length) + ", and plate " +    \
-                     str(prior_mat.plate) + ".")
+                raise ValueError(
+                    (f"Tried to add material {material.name} with concentration"
+                     f" {material.concentration} {material.units}, length "
+                     f"{material.length}, plate {material.plate}; that material"
+                     f" already exists with concentration "
+                     f"{prior_mat.concentration} {prior_mat.units}, length "
+                     f"{prior_mat.length}, plate {prior_mat.plate}."))
+        elif isinstance(material, MixtureMaterial) \
+             and material.rxn_vol != self.rxn_vol:
+            warnings.warn(f"EchoRun object has rxn_vol = {self.rxn_vol}, "
+                             f"but was given a MixtureMaterial with rxn_vol = "
+                             f"{material.rxn_vol}. Assuming EchoRun's rxn_vol"
+                             " is correct.")
+            material.rxn_vol = self.rxn_vol
+
         else:
             self.material_dict[material.name] = material
             material.plate = self.plates[0]
@@ -373,7 +365,7 @@ class EchoRun():
                                             recipe_filename):
         '''
         Build an Echo picklist based on a pair of CSV documents produced from
-        a TX-TL setup spreadsheet (v2.1).
+        a TX-TL setup spreadsheet (v>=2.1).
 
         The stock sheet is a CSV describing materials on the source plate
         (plasmids, usually).
@@ -381,9 +373,7 @@ class EchoRun():
         The recipe sheet is a CSV describing the master mix and what materials
         from the stock sheet go in what destination wells, in what quantity.
 
-        This function will overwrite any previous master mix defined for this
-        EchoRun object, since the master mix is fully defined in the recipe
-        sheet.
+        The layout sheet is not used by this function.
         '''
         self.make_master_mix = True
 
@@ -438,15 +428,6 @@ class EchoRun():
                     material_total_vols[i] += recipe_sheet[j, 5+i] * 1e3
 
         # Assign source wells and register materials
-        # Register TX-TL master mix
-
-        if not "txtl_mm" in self.material_dict:
-            self.material_dict['txtl_mm'] = MasterMix(self.plates[0],
-                                extract_fraction = self.extract_fraction,
-                                mm_excess = self.mm_excess,
-                                add_txtl = False,
-                                rxn_vol = self.rxn_vol)
-        txtl = self.material_dict["txtl_mm"]
 
         # Register Water
         self.add_material(EchoSourceMaterial("water", 1, 0, self.plates[0]))
@@ -481,6 +462,51 @@ class EchoRun():
         # Register picks #
         ##################
 
+        # Make and register the TXTL master mix.
+        mm_materials = []
+        for i in range(11,17):
+            if recipe_sheet[i,4] is None or recipe_sheet[i,4] == 0:
+                continue
+            name  = recipe_sheet[i,0]
+            stock = recipe_sheet[i,1]
+            final = recipe_sheet[i,2]
+            material = EchoSourceMaterial(name, stock, 0, self.plates[0])
+            mm_materials.append((material, final))
+
+        extract_fract = None
+        buffer_fract  = None
+        # This loop must be backwards, because we're removing elements as we go.
+        for i in range(len(mm_materials)-1, -1, -1):
+            mat_tuple = mm_materials[i]
+            name = mat_tuple[0].name.lower()
+            if "extract" in name:
+                del mm_materials[i]
+                extract_fract = mat_tuple[1]
+                if extract_fract != self.extract_fraction:
+                    warnings.warn(("EchoRun object and TX-TL spreadsheet have ",
+                                   "different extract fraction values; ",
+                                   "defaulting to spreadsheet value."))
+            elif "buffer" in name:
+                del mm_materials[i]
+                buffer_fract = mat_tuple[1]
+        if extract_fract is None:
+            raise ValueError(("TX-TL spreadsheet has no recognizable extract ",
+                             "in master mix."))
+        if buffer_fract is None:
+            raise ValueError(("TX-TL spreadsheet has no recognizable buffer ",
+                             "in master mix."))
+
+        if not "txtl_mm" in self.material_dict:
+            # self.material_dict['txtl_mm'] = TXTLMasterMix(
+            self.add_material(TXTLMasterMix(extract_fraction = extract_fract,
+                                txtl_fraction = extract_fract + buffer_fract,
+                                mm_excess = self.mm_excess,
+                                rxn_vol = self.rxn_vol))
+        txtl = self.material_dict["txtl_mm"]
+        for material, final in mm_materials:
+            txtl.add_material(material, final,
+                              dimensionality = "final_concentration")
+
         first_row = 20
         last_row  = 20 + 384
         n_rxns    = 0
@@ -506,8 +532,8 @@ class EchoRun():
                 volume = recipe_sheet[rownum, colnum] * 1e3
                 if volume != None and volume > 0:
                     source_material = stocks[mat_num]
-                    self.reactions[well].add_volume_of_material(source_material,
-                                                                volume)
+                    self.reactions[well].add_material(source_material, volume,
+                                                      dimensionality = "volume")
 
             # Water picks (magic number warning -- magic number defines
             # positions of relevant blocks in the recipe sheet)
@@ -517,21 +543,12 @@ class EchoRun():
             # Master Mix picks (magic number warning -- magic number defines
             # positions of relevant blocks in the recipe sheet)
             volume = recipe_sheet[rownum, 4] * 1e3
-            self.reactions[well].add_volume_of_material(txtl, volume)
-
-        # Add materials to the master mix.
-        for i in range(11,17):
-            if recipe_sheet[i,4] == None or recipe_sheet[i,4] == 0:
-                continue
-            name  = recipe_sheet[i,0]
-            stock = recipe_sheet[i,1]
-            final = recipe_sheet[i,2]
-            material = EchoSourceMaterial(name, stock, 0, self.plates[0])
-            txtl.add_material(material, final)
+            self.reactions[well].add_material(txtl, volume,
+                                              dimensionality = "volume")
 
 
     def load_source_plate(self, input_filename, name_col, conc_col, len_col,
-                          well_col, plate_col, header = True):
+                          well_col, units_col, header = True):
         '''
         Enter new materials from a CSV spreadsheet.
 
@@ -550,12 +567,8 @@ class EchoRun():
             well_col -- Name of the column containing the well location of each
                         material, either as a string ("C") or a 0-indexed int
                         (2)
-            plate_col -- Name of the column containing the name of the plate
-                         the material can be found on, either as a string ("C")
-                         or a 0-indexed int (2), or None if no such column
-                         exists. Plate will default to Plate[#], where # will
-                         increment with each source plate file (without a
-                         plate_col) loaded.
+            units_col -- Name of the column containing the name of the units
+                        of whatever's in the well (e.g. "nM", "x", "ng/uL").
             header -- True iff there is a header row. Decides whether or not to
                         skip the first line of each file
         '''
@@ -566,7 +579,7 @@ class EchoRun():
         conc_idx  = process_column_argument(conc_col)
         len_idx   = process_column_argument(len_col)
         well_idx  = process_column_argument(well_col)
-        plate_idx = process_column_argument(plate_col)
+        units_idx = process_column_argument(units_col)
 
         #############
         # Read file #
@@ -584,19 +597,12 @@ class EchoRun():
                     length = int(floatify(row[len_idx]))
                 else:
                     length = 0
-                if plate_idx == None:
-                    plate_name = "1"
+                if units_col == None:
+                    units = "x"
                 else:
-                    plate_name = row[plate_idx]
-                plate = None
-                for p in self.plates:
-                    if p.name == plate_name:
-                        plate = p
-                        break
-                if not plate:
-                    plate = SourcePlate(SPname = plate_name)
+                    units = row[units_idx]
                 material = EchoSourceMaterial(name, concentration,
-                                              length, plate)
+                                              length, units)
                 self.add_material(material)
                 if self.material_dict[name].wells == None:
                     self.material_dict[name].wells = [well]
@@ -630,8 +636,9 @@ class EchoRun():
         well_idx = process_column_argument(well_column)
         if fill_with_water:
             if not water_name:
-                raise Exception("If 'Fill with water' option selected, must " +\
-                                "set the name of wells contianing water")
+                raise Exception("If 'Fill with water' option selected, must "
+                                "set water_name to the name of water given in "
+                                "your source file.")
 
         with mt_open(input_filename, 'rU') as input_file:
             reader = csv.reader(input_file)
@@ -669,13 +676,13 @@ class EchoRun():
                     water = self.material_dict[water_name]
                     self.reactions[well].fill_with(water)
 
-    def build_dilution_series(self, material_1, material_2,
-                              material_1_final, material_2_final,
-                              first_well, fill_with_water = True,
-                              negative_control = True):
-        '''Calculate TXTL volumes and automatically generate a picklist for
-        an NxN dilution matrix with two inputs. If this EchoSource object has a
-        MasterMix, then add that master mix as well. Fill the rest with water.
+    def dilution_series(self, material_1,       material_2,
+                              material_1_final, material_2_final, first_well):
+        '''Makes an NxN dilution matrix with two inputs, and adds them to a
+        contiguous block on the destination plate.
+
+        Does NOT add anything else -- in particular, no master mix or water
+        are added to any wells.
 
         Args:
             material_1, material_2 -- First and second materials to serialy
@@ -686,13 +693,6 @@ class EchoRun():
                                                     material.
             first_well -- The upper-left-most corner of the block on the
                           destination plate you want to spit into.
-            fill_with_water -- Iff true, fills out any space left in the
-                                reaction after adding master mix and materials
-                                with water. Set to "False" if you want to do
-                                other things to these reactions before using
-                                them.
-            negative_control -- Iff true, adds a negative control well below the
-                                    bottom-left corner of the block.
         '''
         material_1.plate = self.plates[0]
         material_2.plate = self.plates[0]
@@ -712,20 +712,6 @@ class EchoRun():
                              % (n_material_1, n_material_2, first_well,
                                 self.DPtype))
 
-
-        # Add TX-TL master mix as a material, if applicable.
-        if self.make_master_mix:
-            if not "txtl_mm" in self.material_dict:
-                self.material_dict["txtl_mm"] = MasterMix(self.plates[0],
-                                                         rxn_vol = self.rxn_vol)
-            txtl = self.material_dict["txtl_mm"]
-            txtl_mm_vol = txtl.current_vol_per_rxn()
-
-
-        # Add water as a material (if it's not already there).
-        self.add_material(EchoSourceMaterial("water", 1, 0, self.plates[0]))
-        water = self.material_dict["water"]
-
         # Fill in matrix with picks.
         for i in range(n_material_1):
             for j in range(n_material_2):
@@ -739,29 +725,8 @@ class EchoRun():
                                                   material_1_final[i])
                 self.reactions[well].add_material(material_2,
                                                   material_2_final[j])
-                if self.make_master_mix:
-                    self.reactions[well].add_volume_of_material(txtl,
-                                                                txtl_mm_vol)
-                # Water pick
-                if fill_with_water:
-                    self.reactions[well].fill_with(water)
 
-        # Add positive control....
-
-        # and negative control.
-        if negative_control:
-            neg_ctrl_well = string.ascii_uppercase[first_row + n_material_1] \
-                            + str(first_col)
-            if neg_ctrl_well not in self.reactions:
-                self.reactions[neg_ctrl_well] = WellReaction(self.rxn_vol,
-                                                             neg_ctrl_well)
-            if self.make_master_mix:
-                self.reactions[neg_ctrl_well].add_volume_of_material(txtl,
-                                                                    txtl_mm_vol)
-            if fill_with_water:
-                self.reactions[neg_ctrl_well].fill_with(water)
-
-    def add_material_to_well(self, material, final_conc, well,
+    def add_material_to_well(self, material, well, final_conc = None,
                              pipette_by_hand = False):
         '''
         Add a single material, at a single concentration, to a single well.
@@ -769,31 +734,9 @@ class EchoRun():
         Parameters:
             material - An EchoSourceMaterial object representing the material
                         to add.
-            final_conc - The final concentration of material, in nM (or the
-                            same units as the material)
+            final_conc - The final concentration of material, in the same
+                            units as the material
             well - Name of the well to add to.
-            pipette_by_hand - If True, the material will have to
-                                be added by hand by the user (and instructions
-                                will be printed to that effect). Default False,
-                                in which case the material will be pipetted by
-                                the Echo.
-        '''
-        self.add_material_to_block(material, final_conc, well, well,
-                                   pipette_by_hand)
-
-    def add_material_to_block(self, material, final_conc, top_left,
-                              bottom_right, pipette_by_hand = False):
-        '''
-        Add a single material, at a single concentration, to every well in a
-        block on the destination plate.
-
-        Parameters:
-            material - An EchoSourceMaterial object representing the material
-                        to add.
-            final_conc - The final concentration of material, in nM (or the
-                            same units as the material)
-            top_left - top-left-most well of the block to add to.
-            bottom_right - bottom-right-most well of the block to add to.
             pipette_by_hand - If True, the material will have to
                                 be added by hand by the user (and instructions
                                 will be printed to that effect). Default False,
@@ -803,6 +746,43 @@ class EchoRun():
         self.add_material(material)
         material.plate = self.plates[0]
 
+        if well not in self.reactions \
+           or self.reactions[well] == None:
+            self.reactions[well] = WellReaction(self.rxn_vol,
+                                                       well)
+        if final_conc is None:
+            if not isinstance(material, MixtureMaterial):
+                raise ValueError(f"Tried to add non-MixtureMaterial material",
+                                 f"{material} of class {type(material)} to ",
+                                 f"well {well} without giving a final ",
+                                 "concentration.")
+            vol = material.current_vol_per_rxn()
+        else:
+            vol = final_conc * (self.rxn_vol / material.nM)
+        self.reactions[well].add_material(material, vol,
+                                          dimensionality = "volume",
+                                          pipette_by_hand = pipette_by_hand)
+
+    def add_material_to_block(self, material,  top_left,
+                              bottom_right, final_conc = None,
+                              pipette_by_hand = False):
+        '''
+        Add a single material, at a single concentration, to every well in a
+        block on the destination plate.
+
+        Parameters:
+            material - An EchoSourceMaterial object representing the material
+                        to add.
+            final_conc - The final concentration of material, in the same units
+                            as the material.
+            top_left - top-left-most well of the block to add to.
+            bottom_right - bottom-right-most well of the block to add to.
+            pipette_by_hand - If True, the material will have to
+                                be added by hand by the user (and instructions
+                                will be printed to that effect). Default False,
+                                in which case the material will be pipetted by
+                                the Echo.
+        '''
         start_row = string.ascii_uppercase.find(top_left[0])
         end_row   = string.ascii_uppercase.find(bottom_right[0])
         start_col = int(top_left[1:])-1
@@ -811,24 +791,66 @@ class EchoRun():
         for row in range(start_row, end_row+1):
             for col in range(start_col, end_col+1):
                 destination = string.ascii_uppercase[row] + str(col+1)
-                if destination not in self.reactions \
-                   or self.reactions[destination] == None:
-                    self.reactions[destination] = WellReaction(self.rxn_vol,
-                                                               destination)
-                vol = final_conc * (self.rxn_vol / material.nM)
-                self.reactions[destination].add_material(material, final_conc,
-                                            pipette_by_hand = pipette_by_hand)
+                self.add_material_to_well(material, destination, final_conc,
+                                          pipette_by_hand)
 
-    def fill_well_with(self, well, material, pipette_by_hand = False):
+    def add_material_to_all(self, material, final_conc = None,
+                            pipette_by_hand = False):
+        '''
+        Add a single material, at a single concentration, to every well that
+        has been used so far by this EchoRun object. Use for master mixes.
+
+        To fill all wells to maximum volume with a material, use
+        'fill_all_wells_with'.
+
+        Parameters:
+            material - An EchoSourceMaterial object representing the material
+                        to add.
+            final_conc - The final concentration of material, in the same units
+                            as the material.
+            pipette_by_hand - If True, the material will have to
+                                be added by hand by the user (and instructions
+                                will be printed to that effect). Default False,
+                                in which case the material will be pipetted by
+                                the Echo.
+        '''
+        for well in self.reactions:
+            self.add_material_to_well(material, well, final_conc,
+                                      pipette_by_hand)
+
+
+    def fill_well_with(self, material, well, pipette_by_hand = False):
+        '''
+        Adds a material to a single destination well up to the well's maximum
+        volume. The material is not immediately added, just marked for later --
+        you can safely add other materials to the same well after calling this
+        function, and the volume of the fill material will be dynamically
+        updated accordingly.
+
+        Parameters:
+            material - An EchoSourceMaterial object representing the material to
+                        add.
+            well - String describing which well of the destination plate to fill.
+            pipette_by_hand - If True, the material will have to
+                                be added by hand by the user (and instructions
+                                will be printed to that effect). Default False,
+                                in which case the material will be pipetted by
+                                the Echo.
+        '''
         self.add_material(material)
         if well not in self.reactions or self.reactions[well] == None:
             self.reactions[well] = WellReaction(self.rxn_vol, well)
         self.reactions[well].fill_with(material, pipette_by_hand)
 
     def fill_all_wells_with(self, material, pipette_by_hand = False):
+        '''
+        Same as fill_well_with, but applies to every well that has been used so
+        far by this EchoRun object.
+        '''
         self.add_material(material)
         for well in self.reactions:
-            self.reactions[well].fill_with(material, pipette_by_hand)
+            # self.reactions[well].fill_with(material, pipette_by_hand)
+            self.fill_well_with(material, well, pipette_by_hand)
 
     def initialize_source_plate(self):
         """
@@ -840,6 +862,9 @@ class EchoRun():
             mat = self.material_dict[mat_name]
             if mat:
                 name, conc = mat.name, mat.concentration
+                if mat.plate is None:
+                    raise Exception(f"Material '{mat}' doesn't have a plate " +\
+                                     "at plate initialization time.")
                 wells_to_fill = mat.plate.request_source_wells(mat)
 
                 material_well_dict[(name, conc)] = wells_to_fill
@@ -864,6 +889,9 @@ class EchoRun():
         '''
         Write this EchoCSVMaker's protocol to an Echo picklist, and print any
         other necessary directions for the user.
+
+        outputname - The base filename for both the picklist and the instruction
+                        file, e.g. "my_experiment/outputs/my_experiment".
         '''
         # Finalize all of the reactions.
         for reaction in self.reactions.values():
@@ -891,7 +919,7 @@ class EchoRun():
                    or pick.source_material.name == "water":
                     comment = ""
                 else:
-                    comment = "Actual concentration: %.2f nM" \
+                    comment = "Actual concentration: %.2f" \
                         % (pick.source_material.nM * pick.volume / self.rxn_vol)
                 plate = pick.source_material.plate
                 row = [plate.name, plate.type, pick.source_well,
@@ -901,23 +929,9 @@ class EchoRun():
 
         # Write comment file
         with mt_open((outputname+'_experiment_overview.txt'), 'w') as text_file:
-            text_file.write("Materials used:")
+            text_file.write("Materials used:\n")
             for material in self.material_dict.values():
-                is_master_mix = (material.name == "txtl_mm" or \
-                                 material.name == "master_mix")
-                text_file.write("\n%s:" % material.name)
-                if not is_master_mix:
-                    text_file.write("\n\tstock concentration: %.2f nM" % \
-                                    material.nM)
-                if material.length > 0:
-                    text_file.write(" (%.2f ng/uL)" % material.concentration)
-                text_file.write("\n\ttotal volume: %.2f uL" % \
-                                (material.total_volume_requested / 1000.0))
-                # Rewrite with new MasterMixMaterial definitions (final concs
-                # now in terms of final reaction)
-                if isinstance(material, Mixture):
-                    text_file.write(material.text_recipe())
-
+                text_file.write(material.text_recipe())
             # Source plate loading instructions
             text_file.write("\n\nOn the source plate:")
 
@@ -936,11 +950,11 @@ class EchoRun():
                         {v:[i[0] for i in mat_well_dict[name, conc] \
                                  if i[1]==v] for v in volumes_to_add}
                     for vol in volumes_to_add:
-                        text_file.write(f"\n\tAdd {vol/1000.0}uL of {name} in ")
+                        text_file.write(f"\n\tAdd {vol/1000.0} uL of {name} in")
                         if len(wells_by_volume[vol]) > 1:
-                            text_file.write("wells: ")
+                            text_file.write(" wells: ")
                         else:
-                            text_file.write("well: ")
+                            text_file.write(" well: ")
                         first_well = True
                         for w in wells_by_volume[vol]:
                             if first_well:
@@ -965,7 +979,8 @@ class EchoRun():
                 for vol in wells_by_vol:
 
                     wells = [(w[0], int(w[1:])) for w in wells_by_vol[vol]]
-                    text_file.write("\n\tPipette %.2f ul of %s into wells:" % (vol/1000, material.name))
+                    text_file.write("\n\tPipette %.2f ul of %s into wells:" \
+                                    % (vol/1000, material.name))
                     wells.sort()
                     current_row = wells[0][0]
                     for row, col in wells:
@@ -995,14 +1010,16 @@ class EchoRun():
                     well_defs.write(","+mat.name+","+str(conc)+","+unit)
                 well_defs.write("\n")
 
+
 class AbstractMixture(object):
     '''
     Container class for mixes of liquids.
 
     Superclass for
-        * Mixture: For generic mixes of liquids that will be used as materials.
-        * TXTLMasterMix: Subclass of Mixture specialized for TX-TL master mixes.
-        * MasterMix: Alias for TXTLMasterMix for backward compatibility.
+        * MixtureMaterial: For generic mixes of liquids that will be used as
+                            materials, including master mixes.
+        * TXTLMasterMix: Subclass of MixtureMaterial specialized for TX-TL
+                            master mixes.
         * WellReaction: A mix of liquids in a well on a destination plate.
     '''
     def __init__(self, vol = 0, well = None, recipe_excess = 1.0):
@@ -1012,36 +1029,38 @@ class AbstractMixture(object):
         self.fill_material = None
         if recipe_excess < 1:
             raise ValueError("recipe_excess must be greater than or equal to 1.")
-        self.recipe_excess = recipe_excess #Extra fraction (typically .1) of mixture to make when printing a recipe
+        self.recipe_excess = recipe_excess #Extra fraction (typically 1.1) of
+                                           # mixture to make when printing a recipe
 
-    def add_material(self, material, final_conc, units = "concentration"):
+    def add_material(self, material, final_conc, dimensionality = "concentration"):
         '''
         Add a material at a known final concentration. Final concentrations are
-        assumed to use the same units as the material (usually nM). Does NOT
+        assumed to use the same dimensionality as the material (usually nM). Does NOT
         check final mix volume -- that will not be checked until
         finalize is called (happens automatically when recipe is
         called).
 
         Params:
-            material - Usually an EchoSourceMaterial object. If using units of
+            material - Usually an EchoSourceMaterial object. If using dimensionality of
                         volume or percent, material can be a string, in which
                         case a dummy EchoSourceMaterial object will be made
                         and returned for that material.
             final_conc - Final concentration of the material in this mixture.
-            units - One of {"concentration", "percent", "volume"}. Controls
-                    how final_conc is interpreted. If units = "concentration",
-                    final_conc is the final concentration in the same units as
-                    the material. If "percent", will add as a fixed fraction of
-                    the total reaction. If "volume", will add a fixed volume, in
-                    nanoliters.
+            dimensionality - One of {"concentration", "percent", "volume"}.
+                             Controls how final_conc is interpreted. If
+                             dimensionality = "concentration", final_conc is the
+                             final concentration in the same dimensionality as
+                             the material. If "percent", will add as a fixed
+                             fraction of the total reaction. If "volume", will
+                             add a fixed volume, in nanoliters.
         '''
-        units = units.lower()
-        if units == "concentration":
+        dimensionality = dimensionality.lower()
+        if dimensionality == "concentration":
             if not isinstance(material, EchoSourceMaterial):
                 raise TypeError(f"Attempted to add a material with type "
                                 f"{type(material)}; must be an "
-                                "EchoSourceMaterial when using units of "
-                                "concentration.")
+                                "EchoSourceMaterial when using dimensionality of"
+                                " concentration.")
             self.materials.append((material, final_conc, "concentration"))
             return
 
@@ -1052,31 +1071,25 @@ class AbstractMixture(object):
         elif not isinstance(material, EchoSourceMaterial):
             raise TypeError(f"Attempted to add a material with type "
                                 f"{type(material)}; must be an "
-                                "EchoSourceMaterial or string when using units "
-                                f"of {units}.")
-        if units == "percent" or units == "fraction":
+                                "EchoSourceMaterial or string when using "
+                                f"dimensionality of {dimensionality}.")
+        if dimensionality == "percent" or dimensionality == "fraction":
             self.materials.append((material, final_conc, "percent"))
-        elif units == "volume":
-            self.materials.append((material,final_conc, "volume"))
+        elif dimensionality == "volume":
+            self.materials.append((material, final_conc, "volume"))
         else:
-            raise ValueError(f"Attempted to add a material using units "
-                             f"'{units}'. Units must be one of 'concentration',"
-                             " 'volume', or 'percent'.")
+            raise ValueError(f"Attempted to add a material using dimensionality "
+                             f"'{dimensionality}'. Dimensionality must be one of"
+                             " 'concentration', 'volume', or 'percent'.")
         self.finalized = False
 
         return ret_material
 
-    def add_volume_of_material(self, material, vol):
-        '''
-        Add a fixed volume of a material (in nL).
-        '''
-        self.add_material(material, vol, units = "volume")
-        self.finalized = False
-
     def current_vol(self):
         '''
         Calculates the total volume of all of the materials currently in the
-        mix.
+        mix. Use this to figure out how much volume the mix contains, given
+        what has already been added.
         '''
         return sum([vol for name, vol in self.recipe(finalize = False)])
 
@@ -1085,6 +1098,9 @@ class AbstractMixture(object):
         Fill all unfilled volume in the mix with some material (usually
         water). If another material was assigned to fill this, it will
         be overwritten by this call.
+
+        Note that only one material can be used as a fill material at a time. If
+        there was another fill material, it will be overwritten by this call.
         '''
         self.fill_material = material
         self.finalized = False
@@ -1097,35 +1113,35 @@ class AbstractMixture(object):
         underfull.
         '''
         #Check for overfilled wells
-        if self.vol < self.current_vol():
+        if abs(self.get_volume() - self.current_vol()) > 1e-4:
             error_string = self.__class__.__name__
             error_string += " has %d nL volume but contains %.2f nL of " \
-                            % (self.vol, self.current_vol())
+                            % (self.get_volume(), self.current_vol())
             error_string += "ingredients:"
             for material, material_vol in self.get_material_volumes():
                 error_string += "\n\t%d nL of %s" % (material_vol, material)
             raise ValueError(error_string)
 
         if self.fill_material:
-            fill_volume         = self.vol - self.current_vol()
+            fill_volume         = self.get_volume() - self.current_vol()
             fill_mat_final_conc = self.fill_material.nM * fill_volume \
-                                  / self.vol
+                                  / self.get_volume()
             self.add_material(self.fill_material, fill_mat_final_conc)
 
         current_vol = self.current_vol()
-        if current_vol > int(self.vol):
+        if current_vol - self.get_volume() > 1e-4:
             error_string = self.__class__.__name__
             error_string += " has %d nL volume but contains %.2f nL of " \
-                            % (self.vol, current_vol)
+                            % (self.get_volume(), current_vol)
             error_string += "ingredients:"
             for material, material_vol in self.get_material_volumes():
                 error_string += "\n\t%d nL of %s" % (material_vol, material)
             raise ValueError(error_string)
 
-        if current_vol < self.vol:
+        if current_vol < self.get_volume():
             warn_string = self.__class__.__name__
             warn_string += "has %d nL volume but only contains %.2f nL of " \
-                            % (self.vol, current_vol)
+                            % (self.get_volume(), current_vol)
             warn_string += "ingredients. Are you sure you want to underfill " \
                             + "this reaction?"
             for material, material_vol in self.get_material_volumes():
@@ -1136,8 +1152,7 @@ class AbstractMixture(object):
 
     def recipe(self, finalize = True):
         '''
-        Iterator returning descriptors of what goes in the mix. If the
-        mix hasn't been finalized, does so.
+        Generator returning descriptors of what goes in the mix.
 
         Arguments:
             finalize -- Iff True (default), and if the reaction hasn't already
@@ -1156,39 +1171,37 @@ class AbstractMixture(object):
             yield (name, vol)
 
     def get_volume(self):
+        '''
+        The required total volume of the mix. Use this to know what the target
+        volume of the mix should be, regardless of what's actually in it right
+        now.
+        '''
         return self.vol
 
     def get_material_volumes(self):
-        if self.get_volume == None:
+        '''
+        Generator returning objects representing what goes in the mix, along
+        with their volumes.
+        '''
+        if self.get_volume() == None:
             raise ValueError("self.vol is None for object "+repr(self))
 
         for material, final_conc, unit in self.materials:
-            if unit == "concentration":
-                vol  = final_conc * self.get_volume() / material.nM
-            elif unit == "percent":
-                vol = final_conc * self.get_volume()
-            elif unit == "volume":
-                vol = final_conc
+            vol = self._convert_to_vol(material, final_conc, unit)
             yield material, vol
 
-class Mixture(AbstractMixture, EchoSourceMaterial):
-    def __init__(self, name, concentration = 1, vol = None, well = None,
-                 length = 0, plate = None, recipe_excess = 1.0):
-        AbstractMixture.__init__(self, vol = vol, well = well,
-                                 recipe_excess = recipe_excess)
-        EchoSourceMaterial.__init__(self, name, concentration = concentration,
-                                    length = length, plate = plate)
+    def _convert_to_vol(self, material, final_conc, unit):
+        '''
+        Helper function for figuring out how much volume to use of a currently-
+        stored material.
+        '''
+        if unit == "concentration":
+            return final_conc * self.get_volume() / material.nM
+        elif unit == "percent":
+            return final_conc * self.get_volume()
+        elif unit == "volume":
+            return final_conc
 
-
-    def text_recipe(self):
-        ret_str = "\n\tMix:"
-        for material, final_conc, _ in self.materials:
-            ret_str += "\n\t\t%0.2f uL %s" % \
-                            (self.vol * final_conc / material.nM, material.name)
-        return ret_str
-
-    def get_volume(self):
-        return self.total_volume_requested
 
 class WellReaction(AbstractMixture):
     '''
@@ -1203,14 +1216,17 @@ class WellReaction(AbstractMixture):
 
     def fill_with(self, material, pipette_by_hand = False):
         '''
-        Fill all unfilled volume in the reaction with some material (usually
-        water). If another material was assigned to fill this well, it will
+        Fill all unfilled volume in the mix with some material (usually
+        water). If another material was assigned to fill this, it will
         be overwritten by this call.
+
+        Note that only one material can be used as a fill material at a time. If
+        there was another fill material, it will be overwritten by this call.
         '''
         self.fill_material_hand_pipetted = pipette_by_hand
         super(WellReaction, self).fill_with(material)
 
-    def add_material(self, material, final_conc, units = "concentration",
+    def add_material(self, material, final_conc, dimensionality = "concentration",
                      pipette_by_hand = False):
         '''
         Add a material at a known final concentration. Final concentrations are
@@ -1224,18 +1240,18 @@ class WellReaction(AbstractMixture):
         '''
         self.hand_pipetted[material] = pipette_by_hand
 
-        units = units.lower()
-        if units == "concentration":
+        dimensionality = dimensionality.lower()
+        if dimensionality == "concentration":
             target_vol  = self.vol * final_conc / material.nM
-        elif units == "percent":
+        elif dimensionality == "percent":
             target_vol = self.vol * final_conc
-        elif units == "volume":
+        elif dimensionality == "volume":
             target_vol = final_conc
         else:
             raise ValueError(f"Attempted to add a material to a WellReaction "
-                              "using units "
-                             f"'{units}'. Units must be one of 'concentration',"
-                             " 'volume', or 'percent'.")
+                              "using dimensionality "
+                             f"'{dimensionality}'. dimensionality must be one "
+                             "of 'concentration', 'volume', or 'percent'.")
 
         if pipette_by_hand:
             actual_conc = target_vol * material.nM / self.vol
@@ -1245,21 +1261,6 @@ class WellReaction(AbstractMixture):
 
         return super(WellReaction, self).add_material(material, actual_conc,
                                                       "concentration")
-
-
-    def add_volume_of_material(self, material, vol, pipette_by_hand = False):
-        '''
-        Add a fixed volume of a material (in nL).
-        '''
-        if pipette_by_hand:
-            self.hand_pipetted[material] = True
-            super(WellReaction, self).add_volume_of_material(material, vol)
-        else:
-            self.hand_pipetted[material] = False
-            actual_vol = echo_round(vol)
-            super(WellReaction, self).add_volume_of_material(material,
-                                                             actual_vol)
-        self.finalized = False
 
     def finalize(self):
         '''
@@ -1305,92 +1306,94 @@ class WellReaction(AbstractMixture):
         self.finalized = True
 
 
-
-class TXTLMasterMix(Mixture):
+class MixtureMaterial(AbstractMixture, EchoSourceMaterial):
     '''
-    Container class for a list of materials that make up a master mix. This
-    is any mix of materials that are combined into one single material that
-    is in turn put into an Echo source well.
+    Represents a mixture of materials that will be added to a source plate.
+    I.e., it is an EchoSourceMaterial that can contain multiple
+    components.
 
-    Note: Concentrations in a TXTL Master Mix are final concentrations in the
-    *TX-TL reaction*, not in the master mix itself! This is different behavior
-    from other Mixtures.
+    MixtureMaterials have a rxn_vol (reaction volume), which is the size, in nL,
+    of the reaction that MixtureMaterial is going into on the destination plate.
+    Default 10000 (10 uL).
+
+    A MixtureMaterial can EITHER contain materials with concentrations in
+    dimensionality of concentration of the FINAL REACTION ("final_concentration")
+    OR other dimensionality ("concentration", "volume", "fraction"). If final
+    concentration dimensionality is used, then the MixtureMaterial should be
+    added to reactions without a concentration (it will figure out its own
+    volume). Otherwise, it should be added to reactions with a concentration
+    (otherwise it can't figure out how much of each ingredient to use).
     '''
-    def __init__(self, plate, extract_fraction = 0.33, mm_excess = 1.1,
-                 rxn_vol = 10000, add_txtl = True, extract_per_aliquot = 30000,
-                 buffer_per_aliquot = 37000, txtl_fraction = 0.75):
-        '''
-        extract_fraction: If TX-TL is added, this is the fraction of the final
-                            mix made up of TX-TL extract. Default 0.33 (lowest
-                            protein concentration).
-        mm_excess: The ratio of master-mix-to-make to total-mix-needed, i.e.,
-                        mm_excess=1.1 => Make 10% excess, to account for
-                        pipetting loss.
-        rxn_vol: Total volume of a single reaction using this master mix, in nL
-        add_txtl: If true, buffer and extract will automatically be added to
-                    the master mix, using an extract percentage set by
-                    extract_fraction. Default True.
-        extract_per_aliquot: Volume of TX-TL extract in one aliquot, in nL.
-                                Default 30000.
-        buffer_per_aliquot: Volume of TX-TL buffer in one aliquot, in nL.
-                                Default 37000.
-        txtl_fraction: Fraction of the total reaction allocated to
-                        (extract + buffer)
-        '''
-        if add_txtl:
-            self.name = "txtl_mm"
-        else:
-            self.name = "master_mix"
-        self.length = 0
-        self.plate = plate
-        self.nM = 1.0   # Proxy nanomolar value
-
-        self.wells    = None
-        self.well     = "Master Mix"
-        self.picklist = []
-        self.pipettelist = []
-        self.total_volume_requested = 0
-        self.echo_volume_requested = 0
-        self.well_volumes  = None
-        self.finalized     = False
-        self.fill_material = None
-
+    def __init__(self, name, concentration = 1, units = None, vol = None,
+                 well = None, length = 0, recipe_excess = 1.0, rxn_vol = 10000):
+        AbstractMixture.__init__(self, vol = vol, well = well,
+                                 recipe_excess = recipe_excess)
+        EchoSourceMaterial.__init__(self, name, concentration = concentration,
+                                    length = length, units = units)
         self.rxn_vol = rxn_vol
-        self.vol     = rxn_vol
-        self.recipe_excess = mm_excess
-        self.mm_excess = mm_excess
-        self.extract_fraction = extract_fraction
-        self.extract_per_aliquot = extract_per_aliquot
-        self.buffer_per_aliquot = buffer_per_aliquot
-        self.txtl_fraction = txtl_fraction
-        self.materials = []
-        self.current_well = -1
-        self.concentration = 1.0
-        if add_txtl:
-            self.buffer_fraction = self.txtl_fraction - self.extract_fraction
-            txtl_extract = EchoSourceMaterial("Extract", 1, 0, None)
-            txtl_buffer  = EchoSourceMaterial("Buffer",  1, 0, None)
-            self.add_material(txtl_extract,
-                                   self.extract_fraction)
-            self.add_material(txtl_buffer,
-                                   self.buffer_fraction)
+        self.mode = None
+        self.plate = None
+        self.name = name
 
-    def finalize(self):
-        # try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            super(TXTLMasterMix, self).finalize()
-        # except ValueError:
-        #     error_string = "TX-TL Master Mix is being used in reaction with "
-        #     error_string += "%d nL total volume, but contains %.2f nL of " \
-        #                     % (self.vol, self.current_vol())
-        #     error_string += "ingredients per reaction:"
-        #     for material, material_vol  in self.get_material_volumes():
-        #         error_string += "\n\t%d nL of %s" % (material_vol, material)
-        #     raise ValueError(error_string)
+    def fill_with(self, material):
+        '''
+        Fill all unfilled volume in the mix with some material (usually
+        water). If another material was assigned to fill this, it will
+        be overwritten by this call.
 
-    def get_volume(self):
-        return self.rxn_vol
+        Can't do this if using materials with dimensionality of final concentration,
+        since the MixtureMaterial will calculate its volume based on its
+        constituent materials.
+        '''
+        if self.mode == "final_concentration" \
+           and not self.fill_material is None:
+            raise ValueError(("Tried to fill a MixtureMaterial using dimensionality of ",
+                             f"final concentration with material {material}."))
+        self.fill_material = material
+        self.finalized = False
+
+    def add_material(self, material, final_conc,
+                     dimensionality = "final_concentration"):
+        '''
+        Wraps AbstractMixture's add_material function, along with an additional
+        (default) dimensionality option "final_concentration", which sets the final
+        concentration in the reaction the MixtureMaterial is going into (NOT the
+        final concentration within the mix itself).
+        '''
+        dimensionality = dimensionality.lower()
+
+        if isinstance(material, str):
+            material = EchoSourceMaterial(material, 1, 0)
+        elif not isinstance(material, EchoSourceMaterial):
+            raise TypeError(f"Attempted to add a material with type "
+                                f"{type(material)}; must be an "
+                                "EchoSourceMaterial or string when using "
+                                f"dimensionality of {dimensionality}.")
+
+        if dimensionality == "final_concentration":
+            if self.mode is None:
+                if not self.fill_material is None:
+                    raise ValueError((f"Tried to add material {material} to a "
+                                      "MixtureMaterial with a fill material"
+                                      f" {self.fill_material}."))
+                self.mode = "final_concentration"
+            elif self.mode == "mix_concentration":
+                raise ValueError((f"Tried to add a material {material} with "
+                                  "dimensionality of final concentration to a "
+                                  "MixtureMaterial that uses dimensionality of "
+                                  "mix concentration."))
+            self.materials.append((material, final_conc, "final_concentration"))
+        else:
+            if self.mode is None:
+                self.mode = "mix_concentration"
+            elif self.mode == "final_concentration":
+                raise ValueError((f"Tried to add a material {material} with "
+                                  "dimensionality of mix concentration to a "
+                                  "MixtureMaterial that uses dimensionality of "
+                                  "final concentration."))
+            super().add_material(material, final_conc, dimensionality)
+
+        return material
 
     def one_rxn_recipe(self, finalize = True):
         '''
@@ -1404,8 +1407,25 @@ class TXTLMasterMix(Mixture):
                     EchoSourceMaterial and 'vol' is the volume of that material
                     to add to the reaction, in nL.
         '''
-        for material, vol in super(TXTLMasterMix, self).recipe(finalize):
-            yield material, vol
+        if finalize and not self.finalized:
+            self.finalize()
+
+        if self.mode == "mix_concentration":
+            for (material, mat_vol) in self.get_material_volumes():
+                name = str(material)
+                one_rxn_vol = self.rxn_vol * mat_vol / self.get_volume()
+                yield (name, one_rxn_vol)
+        elif self.mode == "final_concentration":
+            for material, final_conc, dimensionality in self.materials:
+                name = str(material)
+                one_rxn_vol = self.rxn_vol * final_conc / material.nM
+                yield (name, one_rxn_vol)
+        elif len(self.materials) == 0:
+            raise StopIteration
+        else:
+            raise ValueError(f"MixtureMaterial '{self}' has invalid unit_type"+\
+                             f"'{self.mode}' (must be " + \
+                              "'final_concentration' or 'mix_concentration').")
 
     def current_vol_per_rxn(self):
         '''
@@ -1414,46 +1434,118 @@ class TXTLMasterMix(Mixture):
         '''
         return sum([vol for name, vol in self.one_rxn_recipe(finalize = False)])
 
-    def current_vol(self):
+    def text_recipe(self):
         '''
-        Wraps current_vol_per_rxn
+        Returns a string describing the mixture and its ingredients.
         '''
-        return self.current_vol_per_rxn()
+        ret_str = "\n%s:" % (self.name)
+        ret_str += "\n\tStock Concentration: %d %s" % (self.concentration,
+                                                       self.units)
+        ret_str += "\n\tTotal Volume: %.2f" % (self.get_volume())
+        lines = []
+        for material, volume in self.recipe():
+            lines.append("\n\t\t%0.2f uL %s" % (volume/1000, str(material)))
+        return ret_str + "".join(lines)
 
-    def recipe(self, finalize = True):
+    def get_volume(self):
         '''
-        Iterator returning descriptors of what goes in the reaction. If the
-        reaction hasn't been finalized, does so.
-
-        Arguments:
-            finalize -- Iff True (default), and if the reaction hasn't already
-                            been finalized, makes sure that it gets finalized.
-
-        Yields -- pairs of the form (material, vol), where 'material' is an
-                    EchoSourceMaterial and 'vol' is the volume of that material
-                    to add to the reaction, in nL.
+        The required total volume of the mix. Use this to know what the target
+        volume of the mix should be, regardless of what's actually in it right
+        now.
         '''
-        # if finalize and not self.finalized:
-        #     self.finalize()
+        if self.total_volume_requested == 0:
+            raise Exception(("Trying to get the volume of a MixtureMaterial ",
+                             "object before requesting any material. ",
+                             "MixtureMaterial objects should only be used as ",
+                             "EchoSourceMaterials; if you want an abstract ",
+                             "mixture, use the AbstractMixture class."))
+        return self.total_volume_requested
 
-        if self.total_volume_requested != 0:
-            ingredients = self.one_rxn_recipe()
-            one_rxn_vol = self.current_vol_per_rxn()
-            for (name, vol) in ingredients:
-                ingredient_fraction = vol / one_rxn_vol
-                yield (name, self.recipe_excess * ingredient_fraction \
-                             * self.total_volume_requested)
+    def get_material_volumes(self):
+        '''
+        Generator returning (material, volume) pairs of each material in the
+        mix, and the volume of that material.
+        '''
+        if self.mode == "mix_concentration":
+            for material, final_conc, unit in self.materials:
+                vol = self._convert_to_vol(material, final_conc, unit)
+                yield material, vol
+        elif self.mode == "final_concentration":
+            for material, one_rxn_vol in self.one_rxn_recipe(finalize = False):
+                total_vol = self.get_volume() * one_rxn_vol / self.current_vol_per_rxn()
+                yield material, total_vol
+
+    def _convert_to_vol(self, material, final_conc, unit):
+        '''
+        Helper function for figuring out how much volume to use of a currently-
+        stored material.
+        '''
+        if unit == "final_concentration":
+            return (final_conc * self.rxn_vol / material.nM) \
+                    * (self.get_volume() / self.current_vol_per_rxn())
+        else:
+            return super()._convert_to_vol(self, material, final_conc, unit)
+
+
+class TXTLMasterMix(MixtureMaterial):
+    '''
+    A MixtureMaterial with built-in TX-TL extract and buffer.
+    '''
+    def __init__(self, extract_fraction = 0.33, mm_excess = 1.1,
+                 rxn_vol = 10000, extract_per_aliquot = 30000,
+                 buffer_per_aliquot = 37000, txtl_fraction = 0.75):
+        '''
+        extract_fraction: This is the fraction of the final mix made up of
+                            TX-TL extract. Default 0.33 (lowest protein
+                            concentration).
+        mm_excess: The ratio of master-mix-to-make to total-mix-needed, i.e.,
+                        mm_excess=1.1 => Make 10 percent excess, to account for
+                        pipetting loss.
+        rxn_vol: Total volume of a single reaction using this master mix, in nL
+        extract_per_aliquot: Volume of TX-TL extract in one aliquot, in nL.
+                                Default 30000.
+        buffer_per_aliquot: Volume of TX-TL buffer in one aliquot, in nL.
+                                Default 37000.
+        txtl_fraction: Fraction of the total reaction allocated to
+                        (extract + buffer)
+        '''
+        MixtureMaterial.__init__(self, name = "txtl_mm", concentration = 1,
+                 vol = None, rxn_vol = rxn_vol, well = None, length = 0,
+                 recipe_excess = mm_excess, units = "x")
+
+        self.nM = 1.0   # 1x
+        self.concentration = 1.0 #1x
+        self.well     = "Master Mix"
+        self.rxn_vol = rxn_vol
+        self.vol     = rxn_vol
+
+        self.mm_excess = mm_excess
+        self.extract_fraction = extract_fraction
+        self.extract_per_aliquot = extract_per_aliquot
+        self.buffer_per_aliquot = buffer_per_aliquot
+        self.txtl_fraction = txtl_fraction
+        self.buffer_fraction = self.txtl_fraction - self.extract_fraction
+        txtl_extract = EchoSourceMaterial("Extract", 1)
+        txtl_buffer  = EchoSourceMaterial("Buffer",  1)
+        self.add_material(txtl_extract, self.extract_fraction,
+                          dimensionality = "final_concentration")
+        self.add_material(txtl_buffer, self.buffer_fraction,
+                          dimensionality = "final_concentration")
+
+    def finalize(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            super(TXTLMasterMix, self).finalize()
 
     def text_recipe(self):
-        ret_str = ""
+        ret_str  = "\nMaster Mix (including %d%% excess):"\
+                        %((self.recipe_excess-1) * 100)
         ret_str += "\n\tTubes of extract needed: %d" % \
                         math.ceil(self.n_extract_aliquots())
         ret_str += "\n\tTubes of buffer needed: %d" % \
                         math.ceil(self.n_buffer_aliquots())
-        ret_str += "\n\tMaster Mix (including %d%% excess):"\
-                        %((self.recipe_excess-1) * 100)
-        for name, vol in self.recipe():
-            ret_str += "\n\t\t%.2f uL %s" % (vol / 1000, name)
+        recipe = super().text_recipe()
+        ret_str += "\n" + "\n".join(recipe.split("\n")[1:])
 
         return ret_str
 
@@ -1490,10 +1582,6 @@ class TXTLMasterMix(Mixture):
                         * self.recipe_excess
 
         return 0
-
-# Alias for backwards compatibility
-MasterMix = TXTLMasterMix
-
 
 
 class SourcePlate():
@@ -1758,8 +1846,6 @@ class SourcePlate():
         else:
             return None
 
-
-
     #Returns total available amount of a given material across all wells
     def get_available_material(self, material):
         name, conc = material.name, material.concentration
@@ -1771,8 +1857,8 @@ class SourcePlate():
 
     def request_source_wells(self, material):
         """
-            Returns the wells to fill with the given material as a list
-            [(well, volume)]
+        Returns the wells to fill with the given material as a list
+        [(well, volume)]
         """
         #Material name and concentration
         name, conc = material.name, material.concentration
@@ -1846,6 +1932,8 @@ class SourcePlate():
             #How much volume has been used so far for this pick
             volume_recieved = 0
 
+            if not (name, conc) in self.materials:
+                print(self.materials)
             for m_ind in range(len(self.materials[name, conc])):
                 (well, source_vol, date) = self.materials[name, conc][m_ind]
                 available_vol = source_vol-dead_volume
