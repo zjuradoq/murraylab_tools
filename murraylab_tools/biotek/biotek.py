@@ -114,6 +114,19 @@ def calibration_data(date = None, filename = None):
         calibration_dict[fluor][bt][gain] = AFU
     return calibration_dict
 
+def is_well(possible_well_name):
+    if len(possible_well_name) < 2:
+        return False
+    row = possible_well_name[0]
+    if row.lower() not in "abcdefghijklmnop":
+        return False
+
+    col = possible_well_name[1:]
+    if not col.isdigit():
+        return False
+
+    return True
+
 
 def standard_channel_name(fp_name, calibration_dict,
                           suppress_name_warning = False):
@@ -366,10 +379,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                 if info in ["Layout", "Results"]:
                     line = next(reader, None)
                     continue
-                if info.upper().startswith("OD"):
-                    reading_OD = True
-                else:
-                    reading_OD = False
+                reading_OD = info.upper().startswith("OD")
                 if reading_OD:
                     read_name = info.split(":")[0].strip()
                     excitation = int(info.split(":")[1])
@@ -408,8 +418,14 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                         emission        = read_properties.emission
 
                 line = next(reader) # Skip a line
-                line = next(reader) # Chart title line
-                well_names = line
+
+                # Figure out in what column the wells begin
+                header_line = next(reader)
+                for idx in range(len(header_line)):
+                    if is_well(header_line[idx]):
+                        first_col = idx
+                        break
+
                 # Data lines
                 for line in reader:
                     idx = 0
@@ -435,11 +451,10 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                                 + 3600*int(hours)
 
                     time_hrs = time_secs / 3600.0
-                    temp = line[2]
-                    for i in range(3,len(line)):
+                    for i in range(first_col,len(line)):
                         if line[i].strip() == "":
                             continue
-                        well_name = well_names[i]
+                        well_name = header_line[i]
                         # Check to see if there's any supplementary information
                         # on this well.
                         if supplementary_filename and \
@@ -1123,6 +1138,7 @@ class BiotekCellPlotter(object):
         # Slice out and normalize all relevant data
         well_names = [ws.well_name for ws in self.well_list]
         df = self.df[self.df.Well.isin(well_names)]
+
         if self.normalize_by_od:
             norm_df = normalize(df, norm_channel = self.od_channel)
         else:
