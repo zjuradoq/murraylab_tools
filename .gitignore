@@ -47,6 +47,9 @@ dist/*
 *.sql
 *.sqlite
 
+.vscode/
+.vscode
+
 # OS generated files #
 ######################
 .DS_Store
