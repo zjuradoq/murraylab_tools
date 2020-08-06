@@ -400,7 +400,6 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                         read_set_idxs[read_name] += 1
                     else:
                         read_idx = int(info.split('[')[-1][:-1]) - 1
-
                     read_channel    = read_sets[read_name]
                     read_properties = read_channel[read_idx]
                     gain            = read_properties.gain
@@ -1408,8 +1407,9 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     #four dimensions is about the best we can do
     #this next part populates the axes list with blanks so that the
     #plotting code still runs like a 4x4 figure
-    if(cols == 1):
-        axes = [axes]
+    
+    #if(cols == 1):
+    #    axes = [axes]
     if(len(plotpos[0])<2):
         plotpos = [[a[0],0] for a in plotpos]
 
@@ -1449,15 +1449,11 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
         didcbar = 0
     for colax in axes:
         colcount = 0
-        if(type(colax)!= list):
+        if(not isinstance(colax,collections.abc.Iterable)):
             colax = [colax]
         for curax in colax:
             #iterate through each plot basically
-
-            #curax = fourthaxis[2]
             plotlocation = [colcount,rowcount]
-            #print(plotlocation)
-
             if(plotlocation in plotpos):#if we are populating this plot:
                 plotind = plotpos.index(plotlocation)
                 curconcs = axiscombs[plotind]
