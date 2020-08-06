@@ -1,0 +1,26 @@
+well,ingredient1,concentration1,unit1,ingredient2,...
+A1,Mg,3.0,concentration,K,60.0,concentration,Master Mix,0.9075,fraction,Water,0.0675,fraction
+A2,Mg,3.0,concentration,K,75.0,concentration,Master Mix,0.9075,fraction,Water,0.065,fraction
+A3,Mg,3.0,concentration,K,105.0,concentration,Master Mix,0.9075,fraction,Water,0.06,fraction
+A4,Mg,3.0,concentration,K,120.0,concentration,Master Mix,0.9075,fraction,Water,0.0575,fraction
+A5,Mg,3.0,concentration,K,135.0,concentration,Master Mix,0.9075,fraction,Water,0.055,fraction
+B1,Mg,5.0,concentration,K,60.0,concentration,Master Mix,0.9075,fraction,Water,0.0575,fraction
+B2,Mg,5.0,concentration,K,75.0,concentration,Master Mix,0.9075,fraction,Water,0.055,fraction
+B3,Mg,5.0,concentration,K,105.0,concentration,Master Mix,0.9075,fraction,Water,0.05,fraction
+B4,Mg,5.0,concentration,K,120.0,concentration,Master Mix,0.9075,fraction,Water,0.0475,fraction
+B5,Mg,5.0,concentration,K,135.0,concentration,Master Mix,0.9075,fraction,Water,0.045,fraction
+C1,Mg,7.0,concentration,K,60.0,concentration,Master Mix,0.9075,fraction,Water,0.0475,fraction
+C2,Mg,7.0,concentration,K,75.0,concentration,Master Mix,0.9075,fraction,Water,0.045,fraction
+C3,Mg,7.0,concentration,K,105.0,concentration,Master Mix,0.9075,fraction,Water,0.04,fraction
+C4,Mg,7.0,concentration,K,120.0,concentration,Master Mix,0.9075,fraction,Water,0.0375,fraction
+C5,Mg,7.0,concentration,K,135.0,concentration,Master Mix,0.9075,fraction,Water,0.035,fraction
+D1,Mg,9.0,concentration,K,60.0,concentration,Master Mix,0.9075,fraction,Water,0.0375,fraction
+D2,Mg,9.0,concentration,K,75.0,concentration,Master Mix,0.9075,fraction,Water,0.035,fraction
+D3,Mg,9.0,concentration,K,105.0,concentration,Master Mix,0.9075,fraction,Water,0.03,fraction
+D4,Mg,9.0,concentration,K,120.0,concentration,Master Mix,0.9075,fraction,Water,0.0275,fraction
+D5,Mg,9.0,concentration,K,135.0,concentration,Master Mix,0.9075,fraction,Water,0.025,fraction
+E1,Mg,11.0,concentration,K,60.0,concentration,Master Mix,0.9075,fraction,Water,0.0275,fraction
+E2,Mg,11.0,concentration,K,75.0,concentration,Master Mix,0.9075,fraction,Water,0.025,fraction
+E3,Mg,11.0,concentration,K,105.0,concentration,Master Mix,0.9075,fraction,Water,0.02,fraction
+E4,Mg,11.0,concentration,K,120.0,concentration,Master Mix,0.9075,fraction,Water,0.0175,fraction
+E5,Mg,11.0,concentration,K,135.0,concentration,Master Mix,0.9075,fraction,Water,0.015,fraction

@@ -1,4 +1,5 @@
 Materials used:
+
 primer_1F:
 	stock concentration: 10000.00 nM
 	total volume: 28.50 uL
@@ -18,22 +19,27 @@ primer_3R:
 	stock concentration: 10000.00 nM
 	total volume: 28.50 uL
 GFP plasmid:
-	stock concentration: 72.47 nM (149.00 ng/uL)
+	stock concentration: 72.47 ng/uL (149.00 ng/uL)
 	total volume: 21.23 uL
 RFP plasmid:
-	stock concentration: 94.04 nM (189.00 ng/uL)
+	stock concentration: 94.04 ng/uL (189.00 ng/uL)
 	total volume: 21.15 uL
 CFP plasmid:
-	stock concentration: 67.91 nM (125.00 ng/uL)
+	stock concentration: 67.91 ng/uL (125.00 ng/uL)
 	total volume: 21.23 uL
+water:
+	stock concentration: 1.00 x
+	total volume: 614.40 uL
 
 On the source plate:
-	Add 28.5uL of primer_1F in well: C07
-	Add 28.5uL of primer_1R in well: C09
-	Add 28.5uL of primer_2F in well: C11
-	Add 28.5uL of primer_2R in well: C13
-	Add 28.5uL of primer_3F in well: C15
-	Add 28.5uL of primer_3R in well: C17
-	Add 21.225uL of GFP plasmid in well: C19
-	Add 21.15uL of RFP plasmid in well: C21
-	Add 21.225uL of CFP plasmid in well: C23
+	Add 28.5 uL of primer_1F in well: K14
+	Add 28.5 uL of primer_1R in well: K21
+	Add 28.5 uL of primer_2F in well: K23
+	Add 28.5 uL of primer_2R in well: L01
+	Add 28.5 uL of primer_3F in well: L03
+	Add 28.5 uL of primer_3R in well: L05
+	Add 21.225 uL of GFP plasmid in well: L07
+	Add 21.15 uL of RFP plasmid in well: L09
+	Add 21.225 uL of CFP plasmid in well: L11
+	Add 65.0 uL of water in wells: L13, L14, L15, L16, L17, L18, L19, L20, L21
+	Add 29.4 uL of water in well: L22
