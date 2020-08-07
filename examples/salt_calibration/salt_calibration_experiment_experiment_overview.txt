@@ -8,19 +8,19 @@ K:
 	total volume: 25.12 uL
 Master Mix:
 	Stock Concentration: 1 
-	Total Volume: 810750.00
-		294.73 uL TX-TL extract (1.000 x)
-		89.31 uL PEG-8000 (1.000 x)
-		178.62 uL Energy Solution (1.000 x)
-		148.85 uL Amino Acids (6.000 mM)
-		99.24 uL pBEST-GFP (9.000 nM)
+	Total Volume: 352875.00
+		128.28 uL TX-TL extract (1.000 x)
+		38.87 uL PEG-8000 (1.000 x)
+		77.74 uL Energy Solution (1.000 x)
+		64.79 uL Amino Acids (6.000 mM)
+		43.19 uL pBEST-GFP (9.000 nM)
 Water:
 	stock concentration: 1.00 x
-	total volume: 62.50 uL
+	total volume: 31.25 uL
 
 On the source plate:
-	Add 29.75 uL of Mg in well: D22
-	Add 25.125 uL of K in well: D24
-	Add 65.0 uL of Master Mix in wells: F01, F02, F03, F04, F05, F06, F07, F08, F09, F10
-	Add 34.75 uL of Master Mix in well: F11
-	Add 41.5 uL of Water in well: F13
+	Add 29.75 uL of Mg in well: E23
+	Add 25.125 uL of K in well: F12
+	Add 65.0 uL of Master Mix in wells: F14, F15, F16, F17, F18
+	Add 27.875 uL of Master Mix in well: F19
+	Add 31.25 uL of Water in well: F21

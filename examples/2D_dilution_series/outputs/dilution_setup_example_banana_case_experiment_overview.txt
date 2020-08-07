@@ -17,10 +17,10 @@ Viscous:
 	total volume: 0.50 uL
 
 On the source plate:
-	Add 26.5 uL of GFP Plasmid in well: D11
-	Add 33.0 uL of ATc in well: D23
-	Add 21.4 uL of Cavendish in well: E04
-	Add 21.3 uL of Gros Michel in well: E06
+	Add 26.5 uL of GFP Plasmid in well: E22
+	Add 33.0 uL of ATc in well: E24
+	Add 21.4 uL of Cavendish in well: F12
+	Add 21.3 uL of Gros Michel in well: F16
 
 On destination plate:
 	Pipette 0.50 ul of Viscous into wells:, E4
