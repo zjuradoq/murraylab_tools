@@ -47,7 +47,7 @@ dist/*
 *.sql
 *.sqlite
 .coverage
-
+coverage.xml
 .vscode/
 .vscode
 
@@ -86,4 +86,5 @@ examples/txtl_setup/
 examples/*.png
 examples/*.csv
 examples/*.txt
+
 

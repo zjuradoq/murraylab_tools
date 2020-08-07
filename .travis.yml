@@ -9,5 +9,13 @@ notifications:
 
 install:
   - pip install -r requirements.txt
+env:
+  - TEST_SUITE=test
+  - TEST_SUITE=test_all
+script:
+  - make $TEST_SUITE
+  - make install
 
-script: pytest
+# Push the results back to codecov
+after_success:
+  - codecov

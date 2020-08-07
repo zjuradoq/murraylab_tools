@@ -109,13 +109,8 @@ setup(
     # downloaded to the ./.eggs directory if they're not locally available
     # already.
     tests_require=[
-        'pytest'
+        'pytest', "pytest-cov", "nbval"
     ],
-
-    # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
-    # package_dir={'murraylab_tools': 'data'}
     package_data={
         'murraylab_tools': ['data/calibration_data.csv'],
     },
