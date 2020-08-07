@@ -27,11 +27,11 @@ water:
 	total volume: 23.52 uL
 
 On the source plate:
-	Add 21.55 uL of Template 1 in well: J24
-	Add 21.3 uL of Template 2 in well: K02
-	Add 21.75 uL of Template 3 in well: K04
-	Add 21.675 uL of Template 4 in well: K11
-	Add 21.2 uL of Template 5 in well: K13
-	Add 65.0 uL of Master Mix in wells: K15, K16, K17, K18, K19
-	Add 46.0 uL of Master Mix in well: K20
-	Add 23.525 uL of water in well: K22
+	Add 21.55 uL of Template 1 in well: K24
+	Add 21.3 uL of Template 2 in well: L02
+	Add 21.75 uL of Template 3 in well: L04
+	Add 21.675 uL of Template 4 in well: L06
+	Add 21.2 uL of Template 5 in well: L08
+	Add 65.0 uL of Master Mix in wells: M01, M02, M03, M04, M05
+	Add 46.0 uL of Master Mix in well: M06
+	Add 23.525 uL of water in well: M08
