@@ -292,8 +292,8 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                 if line[0].strip() == "Reader Serial Number:":
                     if override_plate_reader_id != None:
                             warnings.warn(("Plate reader id overridden to be '%s'") \
-                                    % overrride_plate_reader_id)
-                            plate_reader_id= overrride_plate_reader_id
+                                    % override_plate_reader_id)
+                            plate_reader_id= override_plate_reader_id
                     elif line[1] in plate_reader_ids:
                         plate_reader_id = plate_reader_ids[line[1]]
                     else:
@@ -397,6 +397,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                         continue
                     if not info.endswith(']'):
                         read_idx = read_set_idxs[read_name]
+
                         # The line below is required if multiple blocks have 
                         # the same name but use different read settings. This 
                         # *breaks* on files with multiple blocks for the same 
@@ -405,7 +406,6 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                         # read_set_idxs[read_name] += 1
                     else:
                         read_idx = int(info.split('[')[-1][:-1]) - 1
-
                     read_channel    = read_sets[read_name]
                     read_properties = read_channel[read_idx]
                     gain            = read_properties.gain
@@ -1387,8 +1387,9 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
         dimlist += [constructs]
         dims+= ["Construct"]
     else:
-        fixedinds += ["Construct"]#,"ATC"]
-        fixconcs += constructs#,250]
+        fixedinds += ["Construct"]
+        fixconcs += constructs
+    print(dims)
     if(len(dims)>2):
         #a 3d plot involves multiple plots, but a 2d plot is just a single heatmap.
         #i guess "d" in this case indicates the conditions. Of course a "2d" plot
@@ -1396,7 +1397,7 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
         enddims = range(len(dims[2:])) #cut out the first two dimensions
         axiscombs = allcomb(dimlist[2:]) #all combinations of conditions
         plotpos = allcomb([range(len(a)) for a in dimlist[2:]]) #positions on the graph grid that above will go
-        rows = len(dimlist[2]) #number of constructs
+        rows = len(constructs) #number of constructs
     else:
         #this is the case where we are plotting only a single heatmap
         enddims = []
@@ -1413,6 +1414,8 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     #four dimensions is about the best we can do
     #this next part populates the axes list with blanks so that the
     #plotting code still runs like a 4x4 figure
+    print("axes is")
+    print(axes)
     if(cols == 1):
         axes = [axes]
     if(len(plotpos[0])<2):
@@ -1450,19 +1453,17 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
 
     rowcount = 0
     didcbar = 1
+    if(not isinstance(axes,collections.abc.Iterable)):
+        axes = [axes]
     if(cbar_ax != None):
         didcbar = 0
     for colax in axes:
         colcount = 0
-        if(type(colax)!= list):
+        if(not isinstance(colax,collections.abc.Iterable)):
             colax = [colax]
         for curax in colax:
             #iterate through each plot basically
-
-            #curax = fourthaxis[2]
             plotlocation = [colcount,rowcount]
-            #print(plotlocation)
-
             if(plotlocation in plotpos):#if we are populating this plot:
                 plotind = plotpos.index(plotlocation)
                 curconcs = axiscombs[plotind]
