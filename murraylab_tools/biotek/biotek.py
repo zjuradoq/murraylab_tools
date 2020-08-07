@@ -397,7 +397,12 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                         continue
                     if not info.endswith(']'):
                         read_idx = read_set_idxs[read_name]
-                        read_set_idxs[read_name] += 1
+                        # The line below is required if multiple blocks have 
+                        # the same name but use different read settings. This 
+                        # *breaks* on files with multiple blocks for the same 
+                        # read settings and different well sets. Left for 
+                        # posterity -- hopefully this will never be needed again
+                        # read_set_idxs[read_name] += 1
                     else:
                         read_idx = int(info.split('[')[-1][:-1]) - 1
 
