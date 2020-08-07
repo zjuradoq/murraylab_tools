@@ -47,6 +47,7 @@ dist/*
 *.sql
 *.sqlite
 .coverage
+.coverage*
 coverage.xml
 .vscode/
 .vscode
@@ -71,18 +72,19 @@ Thumbs.db
 !.travis.yml
 
 #data directories
-examples/2D_dilution_series/
-examples/association_list/
-examples/biotek_examples/
-examples/moclo_assembly/
-examples/multiD/
-examples/PCR/
-examples/resources/
-examples/protocol/
-examples/reusable_plate_examples/
-examples/salt_calibration/
+examples/2D_dilution_series/outputs
+examples/association_list/outputs
+examples/biotek_examples/outputs
+examples/moclo_assembly/assemblies
+examples/moclo_assembly/DNA
+examples/moclo_assembly/output
+examples/multiD/output
+examples/PCR/output
+examples/protocol/output
+examples/reusable_plate_examples/outputs
+examples/salt_calibration/output
 examples/tweaking/
-examples/txtl_setup/
+examples/txtl_setup/outputs
 examples/*.png
 examples/*.csv
 examples/*.txt
