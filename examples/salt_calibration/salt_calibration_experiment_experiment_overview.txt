@@ -19,8 +19,8 @@ Water:
 	total volume: 31.25 uL
 
 On the source plate:
-	Add 29.75 uL of Mg in well: E07
-	Add 25.125 uL of K in well: E15
-	Add 65.0 uL of Master Mix in wells: E17, E18, E19, E20, E21
-	Add 27.875 uL of Master Mix in well: E22
-	Add 31.25 uL of Water in well: E24
+	Add 29.75 uL of Mg in well: E23
+	Add 25.125 uL of K in well: F12
+	Add 65.0 uL of Master Mix in wells: F14, F15, F16, F17, F18
+	Add 27.875 uL of Master Mix in well: F19
+	Add 31.25 uL of Water in well: F21
