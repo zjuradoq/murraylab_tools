@@ -1,13 +1,14 @@
 Materials used:
-Mat1:
-	stock concentration: 200.00 nM
-	total volume: 6.38 uL
-Mat2:
-	stock concentration: 500.00 nM
-	total volume: 2.55 uL
-water:
-	stock concentration: 1.00 nM
-	total volume: 11.07 uL
 
-Instructions:
-	Add 32.075uL of water in well: A13
+Mat1:
+	stock concentration: 200.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7fc318319070>
+	total volume: 3.55 uL
+Mat2:
+	stock concentration: 500.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7fc318319070>
+	total volume: 1.43 uL
+water:
+	stock concentration: 1.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7fc318319070>
+	total volume: 36.02 uL
+
+On the source plate:
+	Add 36.025 uL of water in well: A23

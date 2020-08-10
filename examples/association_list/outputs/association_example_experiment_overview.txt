@@ -32,14 +32,14 @@ water:
 	total volume: 614.40 uL
 
 On the source plate:
-	Add 28.5 uL of primer_1F in well: L10
-	Add 28.5 uL of primer_1R in well: L12
-	Add 28.5 uL of primer_2F in well: L23
-	Add 28.5 uL of primer_2R in well: M07
-	Add 28.5 uL of primer_3F in well: M09
-	Add 28.5 uL of primer_3R in well: M11
-	Add 21.225 uL of GFP plasmid in well: M13
-	Add 21.15 uL of RFP plasmid in well: M15
-	Add 21.225 uL of CFP plasmid in well: M17
-	Add 65.0 uL of water in wells: N01, N02, N03, N04, N05, N06, N07, N08, N09
-	Add 29.4 uL of water in well: N10
+	Add 28.5 uL of primer_1F in well: M24
+	Add 28.5 uL of primer_1R in well: N12
+	Add 28.5 uL of primer_2F in well: N14
+	Add 28.5 uL of primer_2R in well: N16
+	Add 28.5 uL of primer_3F in well: N18
+	Add 28.5 uL of primer_3R in well: N20
+	Add 21.225 uL of GFP plasmid in well: N22
+	Add 21.15 uL of RFP plasmid in well: N24
+	Add 21.225 uL of CFP plasmid in well: O01
+	Add 65.0 uL of water in wells: O03, O04, O05, O06, O07, O08, O09, O10, O11
+	Add 29.4 uL of water in well: O12
