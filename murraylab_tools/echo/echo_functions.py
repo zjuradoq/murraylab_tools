@@ -260,7 +260,7 @@ class EchoRun():
                     TX-TL setup experiments, but not for association spreadsheet
                     experiments.
     '''
-    def __init__(self, rxn_vol = 10000, DPtype = None, plate = None):
+    def __init__(self, rxn_vol = 10000, DPtype = None, plate = None,plate_log_folder=None):
         # The user gives the reaction volume in microliters; store it in nL
         self.rxn_vol = rxn_vol
 
@@ -279,11 +279,14 @@ class EchoRun():
                               "valid plate type, contact a murraylab_tools " +\
                               "developer to have it added.") % self.DPtype)
         if plate == None:
-            self.plates = [SourcePlate("Source[1]", "384PP_AQ_BP")]
+            self.plates = [SourcePlate(plate_log_folder, "384PP_AQ_BP")]
         else:
             self.plates = [plate]
 
-
+        if plate_log_folder is None:
+            self.plate_log_folder = ""
+        else:
+            self.plate_log_folder = plate_log_folder
         self.material_dict   = dict()
         self.reactions       = dict()
         self.picklist        = []
@@ -926,7 +929,6 @@ class EchoRun():
                        pick.source_material.name, self.DPtype,
                        pick.destination_well, int(pick.volume), comment]
                 writer.writerow(row)
-
         # Write comment file
         with mt_open((outputname+'_experiment_overview.txt'), 'w') as text_file:
             text_file.write("Materials used:\n")
@@ -2129,6 +2131,7 @@ class DestinationPlate():
         Writes which wells have been used to a data file. The well-use file
         lists wells that have been used, with one line per well used.
         '''
+
         if not self.used_well_file:
             return
         used_well_indices = self.wells_used.nonzero()

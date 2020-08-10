@@ -1417,8 +1417,8 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     #four dimensions is about the best we can do
     #this next part populates the axes list with blanks so that the
     #plotting code still runs like a 4x4 figure
-    print("axes is")
-    print(axes)
+    #print("axes is")
+    #print(axes)
     if(cols == 1):
         axes = [axes]
     if(len(plotpos[0])<2):
