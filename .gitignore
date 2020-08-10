@@ -72,19 +72,19 @@ Thumbs.db
 !.travis.yml
 
 #data directories
-examples/2D_dilution_series/outputs
-examples/association_list/outputs
-examples/biotek_examples/outputs
-examples/moclo_assembly/assemblies
-examples/moclo_assembly/DNA
-examples/moclo_assembly/output
-examples/multiD
-examples/PCR/output
-examples/protocol/output
-examples/reusable_plate_examples/outputs
-examples/salt_calibration/outputs
-examples/tweaking/
-examples/txtl_setup/outputs
+examples/2D_dilution_series/outputs/*
+examples/association_list/outputs/*
+examples/biotek_examples/outputs/*
+examples/moclo_assembly/assemblies/*
+examples/moclo_assembly/DNA/*
+examples/moclo_assembly/output/*
+examples/multiD/*
+examples/PCR/output/*
+examples/protocol/output/*
+examples/reusable_plate_examples/outputs/*
+examples/salt_calibration/outputs/*
+examples/tweaking/*
+examples/txtl_setup/outputs/*
 examples/*.png
 examples/*.csv
 examples/*.txt
