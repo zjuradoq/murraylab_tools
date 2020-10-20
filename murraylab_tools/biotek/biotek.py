@@ -186,7 +186,7 @@ def read_supplementary_info(input_filename):
 
 def tidy_biotek_data(input_filename, supplementary_filename = None,
                      volume = None, convert_to_uM = False,
-                     calibration_dict = None, override_plate_reader_id=None):
+                     calibration_dict = None, override_plate_reader_id=None, output_filename = None):
     '''
     Convert the raw output from a Biotek plate reader into tidy data.
     Optionally, also adds columns of metadata specified by a "supplementary
@@ -218,10 +218,12 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                                 be used for each channel.
         --override_plate_reader_id: If not None, the plate reader ID will be
                                         set to this. Default None.
+        --output_filename: If not None, the output filename will be this. Otherwise,
+                            will save in the same folder as the input, with "_tidy" appended
     Returns: None
     Side Effects: Creates a new CSV with the same name as the data file with
-                    "_tidy" appended to the end. This new file is in tidy
-                    format, with each row representing a single channel read
+                    "_tidy" appended to the end. Or uses output_filename to define the output filename. 
+                    This new file is in tidy format, with each row representing a single channel read
                     from a single well at a single time.
 
     '''
@@ -232,7 +234,8 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
     if supplementary_filename:
         supplementary_data = read_supplementary_info(supplementary_filename)
     filename_base   = input_filename.rsplit('.', 1)[0]
-    output_filename = filename_base + "_tidy.csv"
+    if(output_filename is None):
+        output_filename = filename_base + "_tidy.csv"
 
     if calibration_dict is None:
         calibration_dict = calibration_data()
@@ -1413,8 +1416,8 @@ def multiPlot(dims_in,plotdf,fixedinds_in,fixconcs_in,constructs,FPchan,\
     #four dimensions is about the best we can do
     #this next part populates the axes list with blanks so that the
     #plotting code still runs like a 4x4 figure
-    print("axes is")
-    print(axes)
+    #print("axes is")
+    #print(axes)
     if(cols == 1):
         axes = [axes]
     if(len(plotpos[0])<2):
