@@ -1,14 +1,14 @@
 Materials used:
 
 Mat1:
-	stock concentration: 200.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7fc318319070>
-	total volume: 3.55 uL
+	stock concentration: 200.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7f324c5320a0>
+	total volume: 1.82 uL
 Mat2:
-	stock concentration: 500.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7fc318319070>
-	total volume: 1.43 uL
+	stock concentration: 500.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7f324c5320a0>
+	total volume: 0.72 uL
 water:
-	stock concentration: 1.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7fc318319070>
-	total volume: 36.02 uL
+	stock concentration: 1.00 <murraylab_tools.echo.echo_functions.SourcePlate object at 0x7f324c5320a0>
+	total volume: 38.45 uL
 
 On the source plate:
-	Add 36.025 uL of water in well: A23
+	Add 38.45 uL of water in well: B03

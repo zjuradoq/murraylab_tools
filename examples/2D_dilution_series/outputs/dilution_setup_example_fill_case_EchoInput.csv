@@ -1,13 +1,13 @@
 Source Plate,Source Plate Type,Source Well,Sample ID,Destination Plate Name,Destination Well,Transfer Volume,Sample Comment
-Source[1],384PP_AQ_BP,F17,Cavendish,Nunc_384_black_glassbottom,D2,100,Actual concentration: 1.00
-Source[1],384PP_AQ_BP,F17,Cavendish,Nunc_384_black_glassbottom,D3,100,Actual concentration: 1.00
-Source[1],384PP_AQ_BP,F17,Cavendish,Nunc_384_black_glassbottom,E2,100,Actual concentration: 1.00
-Source[1],384PP_AQ_BP,F17,Cavendish,Nunc_384_black_glassbottom,E3,100,Actual concentration: 1.00
-Source[1],384PP_AQ_BP,F19,Gros Michel,Nunc_384_black_glassbottom,F5,300,Actual concentration: 3.00
-Source[1],384PP_AQ_BP,F21,Salt Water,Nunc_384_black_glassbottom,D2,9900,Actual concentration: 0.99
-Source[1],384PP_AQ_BP,F21,Salt Water,Nunc_384_black_glassbottom,D3,9900,Actual concentration: 0.99
-Source[1],384PP_AQ_BP,F21,Salt Water,Nunc_384_black_glassbottom,E2,9900,Actual concentration: 0.99
-Source[1],384PP_AQ_BP,F21,Salt Water,Nunc_384_black_glassbottom,E3,9900,Actual concentration: 0.99
-Source[1],384PP_AQ_BP,F21,Salt Water,Nunc_384_black_glassbottom,F5,4400,Actual concentration: 0.44
-Source[1],384PP_AQ_BP,F22,Salt Water,Nunc_384_black_glassbottom,F5,5300,Actual concentration: 0.53
-Source[1],384PP_AQ_BP,F22,Salt Water,Nunc_384_black_glassbottom,E4,9500,Actual concentration: 0.95
+Source[1],384PP_AQ_BP,H17,Cavendish,Nunc_384_black_glassbottom,D2,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,H17,Cavendish,Nunc_384_black_glassbottom,D3,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,H17,Cavendish,Nunc_384_black_glassbottom,E2,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,H17,Cavendish,Nunc_384_black_glassbottom,E3,100,Actual concentration: 1.00
+Source[1],384PP_AQ_BP,H19,Gros Michel,Nunc_384_black_glassbottom,F5,300,Actual concentration: 3.00
+Source[1],384PP_AQ_BP,H21,Salt Water,Nunc_384_black_glassbottom,D2,9900,Actual concentration: 0.99
+Source[1],384PP_AQ_BP,H21,Salt Water,Nunc_384_black_glassbottom,D3,9900,Actual concentration: 0.99
+Source[1],384PP_AQ_BP,H21,Salt Water,Nunc_384_black_glassbottom,E2,9900,Actual concentration: 0.99
+Source[1],384PP_AQ_BP,H21,Salt Water,Nunc_384_black_glassbottom,E3,9900,Actual concentration: 0.99
+Source[1],384PP_AQ_BP,H21,Salt Water,Nunc_384_black_glassbottom,F5,4400,Actual concentration: 0.44
+Source[1],384PP_AQ_BP,H22,Salt Water,Nunc_384_black_glassbottom,F5,5300,Actual concentration: 0.53
+Source[1],384PP_AQ_BP,H22,Salt Water,Nunc_384_black_glassbottom,E4,9500,Actual concentration: 0.95

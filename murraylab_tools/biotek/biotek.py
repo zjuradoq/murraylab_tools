@@ -398,11 +398,12 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                     if not info.endswith(']'):
                         read_idx = read_set_idxs[read_name]
 
-                        # The line below is required if multiple blocks have 
-                        # the same name but use different read settings. This 
-                        # *breaks* on files with multiple blocks for the same 
-                        # read settings and different well sets. Left for 
+                        # The line below is required if multiple blocks have
+                        # the same name but use different read settings. This
+                        # *breaks* on files with multiple blocks for the same
+                        # read settings and different well sets. Left for
                         # posterity -- hopefully this will never be needed again
+
                         # read_set_idxs[read_name] += 1
                     else:
                         read_idx = int(info.split('[')[-1][:-1]) - 1
@@ -410,7 +411,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                     read_properties = read_channel[read_idx]
                     gain            = read_properties.gain
                     if len(info_parts) > 1:
-                        if line[1] != "":
+                        if len(line) > 1 and line[1] != "":
                             excitation = info_parts[1].split("[")[0]
                             emission = line[1].split("[")[0]
                         else:
@@ -966,7 +967,7 @@ def smoothed_derivatives(df, column = "Measurement", window_size = 1,
     deriv_df   = pd.DataFrame()
     for name, group in grouped_df:
         if column == "Measurement":
-            deriv_name = "%s (%s/sec)" % (column, group.Units.unique()[0])
+            deriv_name = "%s/sec" % (group.Units.unique()[0])
             group.Units = deriv_name
         group = group.copy()
         group[column] = np.gradient(group[column].to_numpy(),
@@ -1164,10 +1165,8 @@ class BiotekCellPlotter(object):
             highest_observed_y = max(highest_observed_y,
                                      vals[np.where(np.isfinite(vals))].max())
         ax1.set_xlabel("Time (hr)")
-        if self.normalize_by_od:
-            ax1.set_ylabel("%s/OD (gain %d)" % (self.channel, self.gain))
-        else:
-            ax1.set_ylabel("%s (gain %d)" % (self.channel, self.gain))
+        units = norm_df.Units.iloc[0]
+        ax1.set_ylabel(f"{self.channel} {units} (gain {self.gain})")
 
         if split_plots:
             if show_legend:
