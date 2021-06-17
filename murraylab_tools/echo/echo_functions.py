@@ -755,12 +755,19 @@ class EchoRun():
                                                        well)
         if final_conc is None:
             if not isinstance(material, MixtureMaterial):
-                raise ValueError(f"Tried to add non-MixtureMaterial material",
-                                 f"{material} of class {type(material)} to ",
-                                 f"well {well} without giving a final ",
+                raise ValueError(f"Tried to add non-MixtureMaterial material"
+                                 f"{material} of class {type(material)} to "
+                                 f"well {well} without giving a final "
                                  "concentration.")
             vol = material.current_vol_per_rxn()
         else:
+            if isinstance(material, MixtureMaterial):
+                warnings.warn(f"Tried to add a MixtureMaterial {material} to "
+                              f"well {well} with a fixed volume. This is not "
+                              f"recommended -- set final_conc = None (or don't "
+                              f"set final_conc) in call to add_material_to_well"
+                              f" to automatically calculate an appropriate "
+                               "volume.", Warning)
             vol = final_conc * (self.rxn_vol / material.nM)
         self.reactions[well].add_material(material, vol,
                                           dimensionality = "volume",
@@ -1456,11 +1463,11 @@ class MixtureMaterial(AbstractMixture, EchoSourceMaterial):
         now.
         '''
         if self.total_volume_requested == 0:
-            raise Exception(("Trying to get the volume of a MixtureMaterial ",
-                             "object before requesting any material. ",
-                             "MixtureMaterial objects should only be used as ",
-                             "EchoSourceMaterials; if you want an abstract ",
-                             "mixture, use the AbstractMixture class."))
+            raise Exception("Trying to get the volume of a MixtureMaterial "
+                             "object before requesting any material. "
+                             "MixtureMaterial objects should only be used as "
+                             "EchoSourceMaterials; if you want an abstract "
+                             "mixture, use the AbstractMixture class.")
         return self.total_volume_requested
 
     def get_material_volumes(self):
@@ -1486,7 +1493,7 @@ class MixtureMaterial(AbstractMixture, EchoSourceMaterial):
             return (final_conc * self.rxn_vol / material.nM) \
                     * (self.get_volume() / self.current_vol_per_rxn())
         else:
-            return super()._convert_to_vol(self, material, final_conc, unit)
+            return super()._convert_to_vol(material, final_conc, unit)
 
 
 class TXTLMasterMix(MixtureMaterial):
