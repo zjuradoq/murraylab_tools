@@ -1486,7 +1486,7 @@ class MixtureMaterial(AbstractMixture, EchoSourceMaterial):
             return (final_conc * self.rxn_vol / material.nM) \
                     * (self.get_volume() / self.current_vol_per_rxn())
         else:
-            return super()._convert_to_vol(self, material, final_conc, unit)
+            return super()._convert_to_vol(material, final_conc, unit)
 
 
 class TXTLMasterMix(MixtureMaterial):
