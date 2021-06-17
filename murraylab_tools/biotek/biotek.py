@@ -186,7 +186,8 @@ def read_supplementary_info(input_filename):
 
 def tidy_biotek_data(input_filename, supplementary_filename = None,
                      volume = None, convert_to_uM = False,
-                     calibration_dict = None, override_plate_reader_id=None, output_filename = None):
+                     calibration_dict = None, override_plate_reader_id=None,
+                     output_filename = None):
     '''
     Convert the raw output from a Biotek plate reader into tidy data.
     Optionally, also adds columns of metadata specified by a "supplementary
@@ -222,7 +223,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
                             will save in the same folder as the input, with "_tidy" appended
     Returns: None
     Side Effects: Creates a new CSV with the same name as the data file with
-                    "_tidy" appended to the end. Or uses output_filename to define the output filename. 
+                    "_tidy" appended to the end. Or uses output_filename to define the output filename.
                     This new file is in tidy format, with each row representing a single channel read
                     from a single well at a single time.
 
@@ -895,6 +896,10 @@ def moving_average_fit(df, column = "Measurement", window_size = 1,
     Returns: A DataFrame in which measurements (or some other column) are
                 replaced by a moving average of those measurements.
     '''
+    if units.lower() not in ["seconds", "hours", "index"]:
+        raise ValueError("Tried to take moving average fit using invalid " + \
+                         "unit " + str(units) + "; must be 'seconds', " + \
+                         "'hours', or 'index'")
     group_cols = ["Channel", "Gain","Excitation","Emission", "Well"]
     if grouping_variables:
         group_cols += grouping_variables
@@ -1013,14 +1018,14 @@ def normalize(df, norm_channel = "OD600", norm_channel_gain = -1):
     del channel_list[channel_list.index(OD_channel_string)]
     dflist = [df[df.ChanStr == a].reset_index() for a in channel_list]
     normalized_df = od_df.copy()
-    for channel_df in dflist:
+    for i, channel_df in enumerate(dflist):
         channel_df.Measurement = channel_df.Measurement/od_df.Measurement
         orig_units = channel_df.Units.unique()[0]
         norm_units = "OD" if norm_channel.startswith("OD") \
                           else channel_df.Units.unique()[0]
         channel_df.Units = "%s/%s" % (orig_units, norm_units)
         normalized_df = normalized_df.append(channel_df,ignore_index=True)
-    normalized_df.reset_index()
+    normalized_df.reset_index(inplace = True, drop = True)
 
     return normalized_df
 
@@ -1154,6 +1159,18 @@ class BiotekCellPlotter(object):
             norm_df = df
         norm_df = norm_df[(norm_df.Channel == self.channel) & \
                           (norm_df.Gain == self.gain)]
+
+        # Check to make sure there's data for this condition; if not, error
+        # out cleanly.
+        if len(norm_df) == 0:
+            raise ValueError("No data for BiotekCellPlotter with channel ",
+                             f"{self.channel}, gain {self.gain}, and well_list",
+                             f"{self.well_list}")
+        if np.all(np.isnan(norm_df[column].values)):
+            raise ValueError("No data for BiotekCellPlotter with channel ",
+                             f"{self.channel}, gain {self.gain}, and wells",
+                             f"{[w.well_name for w in self.well_list]} is NaN.")
+
 
         # Plot out all of the fluorescence data, keeping track of the largest
         # plotted measurement.

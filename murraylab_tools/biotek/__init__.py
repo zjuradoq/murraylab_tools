@@ -11,6 +11,7 @@ from .biotek import calibration_data, \
                     moving_average_fit, \
                     read_supplementary_info, \
                     extract_trajectories_only, \
+                    apply_by_well, \
                     normalize, \
                     BiotekCellPlotter, \
                     calibration_dates, \
