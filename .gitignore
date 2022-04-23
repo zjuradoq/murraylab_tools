@@ -76,4 +76,7 @@ examples/*.png
 examples/*.csv
 examples/*.txt
 
+# pyenv
+#######
 
+.python-version
