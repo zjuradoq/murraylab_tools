@@ -1,4 +1,5 @@
---editable git+git://github.com/dr3y/dnaplotlib.git@master#egg=dnaplotlib
+dnaplotlib
+openpyxl
 scipy>=1.0
 pydna
 biopython==1.70
