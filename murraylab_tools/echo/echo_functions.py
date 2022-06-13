@@ -486,9 +486,9 @@ class EchoRun():
                 del mm_materials[i]
                 extract_fract = mat_tuple[1]
                 if extract_fract != self.extract_fraction:
-                    warnings.warn(("EchoRun object and TX-TL spreadsheet have ",
-                                   "different extract fraction values; ",
-                                   "defaulting to spreadsheet value."))
+                    warnings.warn("EchoRun object and TX-TL spreadsheet have \
+                                   different extract fraction values;\
+                                   defaulting to spreadsheet value.")
             elif "buffer" in name:
                 del mm_materials[i]
                 buffer_fract = mat_tuple[1]
