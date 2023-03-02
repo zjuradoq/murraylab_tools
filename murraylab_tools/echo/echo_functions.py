@@ -486,9 +486,9 @@ class EchoRun():
                 del mm_materials[i]
                 extract_fract = mat_tuple[1]
                 if extract_fract != self.extract_fraction:
-                    warnings.warn(("EchoRun object and TX-TL spreadsheet have ",
-                                   "different extract fraction values; ",
-                                   "defaulting to spreadsheet value."))
+                    warnings.warn("EchoRun object and TX-TL spreadsheet have \
+                                   different extract fraction values;\
+                                   defaulting to spreadsheet value.")
             elif "buffer" in name:
                 del mm_materials[i]
                 buffer_fract = mat_tuple[1]
@@ -1450,10 +1450,10 @@ class MixtureMaterial(AbstractMixture, EchoSourceMaterial):
         ret_str = "\n%s:" % (self.name)
         ret_str += "\n\tStock Concentration: %d %s" % (self.concentration,
                                                        self.units)
-        ret_str += "\n\tTotal Volume: %.2f" % (self.get_volume())
+        ret_str += "\n\tTotal Volume: %.2f" % (self.get_volume()*self.recipe_excess)
         lines = []
         for material, volume in self.recipe():
-            lines.append("\n\t\t%0.2f uL %s" % (volume/1000, str(material)))
+            lines.append("\n\t\t%0.2f uL %s" % (volume/1000*self.recipe_excess, str(material)))
         return ret_str + "".join(lines)
 
     def get_volume(self):
