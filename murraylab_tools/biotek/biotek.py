@@ -156,12 +156,25 @@ def raw_to_uM(calibration_dict, raw, protein, biotek, gain, volume):
     '''
     protein = standard_channel_name(protein, calibration_dict)
     if not protein in calibration_dict or \
-       not biotek in calibration_dict[protein] or \
-       not gain in calibration_dict[protein][biotek]:
+       not biotek in calibration_dict[protein]:
        return None
+    if not gain in calibration_dict[protein][biotek]:
+        if not gain in calibration_dict[protein][biotek][0]:
+            return None
     # Note that volume is in uL!
     if raw == "OVRFLW":
         raw = np.infty
+    # if tuple form of calibration fit is provided, incorporate that information
+    if type(calibration_dict[protein][biotek][gain]) == tuple:
+        # if only slope is given, use that
+        if len(calibration_dict[protein][biotek][gain]) == 1:
+            return float(raw) * 10.0 / calibration_dict[protein][biotek][gain][0] / volume
+        # if slope and intercept are given
+        if len(calibration_dict[protein][biotek][gain]) == 2:
+            slope = calibration_dict[protein][biotek][gain][0]
+            intercept = calibration_dict[protein][biotek][gain][1]
+            return ((float(raw) * 10.0 / volume) - intercept)/slope
+    # if int/float form of calibration fit is provided, proceed using only slope
     return float(raw) * 10.0 / calibration_dict[protein][biotek][gain] / volume
 
 ReadSet = collections.namedtuple('ReadSet', ['name', 'excitation', 'emission',
