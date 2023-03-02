@@ -20,6 +20,8 @@ from ..utils import *
 import pkg_resources
 from datetime import datetime
 from copy import deepcopy as dc
+from ast import literal_eval as make_tuple
+
 
 ####################
 # Plate Reader IDs #
@@ -165,7 +167,10 @@ def raw_to_uM(calibration_dict, raw, protein, biotek, gain, volume):
     if raw == "OVRFLW":
         raw = np.infty
     # if tuple form of calibration fit is provided, incorporate that information
-    if type(calibration_dict[protein][biotek][gain]) == tuple:
+    if type(calibration_dict[protein][biotek][gain]) == str and \
+    '(' in calibration_dict[protein][biotek][gain]:
+        # convert string to tuple
+        calibration_dict[protein][biotek][gain] = make_tuple(calibration_dict[protein][biotek][gain])
         # if only slope is given, use that
         if len(calibration_dict[protein][biotek][gain]) == 1:
             return float(raw) * 10.0 / calibration_dict[protein][biotek][gain][0] / volume
