@@ -167,10 +167,13 @@ def raw_to_uM(calibration_dict, raw, protein, biotek, gain, volume):
     if raw == "OVRFLW":
         raw = np.infty
     # if tuple form of calibration fit is provided, incorporate that information
-    if type(calibration_dict[protein][biotek][gain]) == str and \
-    '(' in calibration_dict[protein][biotek][gain]:
-        # convert string to tuple
-        calibration_dict[protein][biotek][gain] = make_tuple(calibration_dict[protein][biotek][gain])
+    this_fluor_biotek_gain = calibration_dict[protein][biotek][gain]
+    if (type(this_fluor_biotek_gain) == str) or \
+        (type(this_fluor_biotek_gain) == tuple):
+        # if reading calibration gain for fluorophore, biotek for first time
+        if type(this_fluor_biotek_gain) == str:
+            # convert string to tuple
+            calibration_dict[protein][biotek][gain] = make_tuple(this_fluor_biotek_gain)
         # if only slope is given, use that
         if len(calibration_dict[protein][biotek][gain]) == 1:
             return float(raw) * 10.0 / calibration_dict[protein][biotek][gain][0] / volume
@@ -180,7 +183,8 @@ def raw_to_uM(calibration_dict, raw, protein, biotek, gain, volume):
             intercept = calibration_dict[protein][biotek][gain][1]
             return ((float(raw) * 10.0 / volume) - intercept)/slope
     # if int/float form of calibration fit is provided, proceed using only slope
-    return float(raw) * 10.0 / calibration_dict[protein][biotek][gain] / volume
+    else:
+        return float(raw) * 10.0 / calibration_dict[protein][biotek][gain] / volume
 
 ReadSet = collections.namedtuple('ReadSet', ['name', 'excitation', 'emission',
                                              'gain'])
