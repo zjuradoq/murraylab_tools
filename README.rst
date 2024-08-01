@@ -12,9 +12,9 @@ Tools for Common Murray Lab Protocols
 
 Code for common tasks in the Murray lab. Supports Python >=3.6 only.
 
-Install with the following (probably requires sudo): ``pip install git+git://github.com/biocircuits/murraylab_tools.git@master``
+Install with the following (probably requires sudo): ``pip install git+https://github.com/biocircuits/murraylab_tools.git@master``
 
-To update, run (also with superuser privilege): ``pip install --upgrade --no-deps git+git://github.com/biocircuits/murraylab_tools.git@master``
+To update, run (also with superuser privilege): ``pip install --upgrade --no-deps git+https://github.com/biocircuits/murraylab_tools.git@master``
 
 Currently includes the following subpackages:
 
