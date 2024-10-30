@@ -191,7 +191,7 @@ ReadSet = collections.namedtuple('ReadSet', ['name', 'excitation', 'emission',
 
 def read_supplementary_info(input_filename):
     info = dict()
-    with mt_open(input_filename, 'rU') as infile:
+    with mt_open(input_filename, 'r') as infile:
         reader = csv.reader(infile)
         title_line = next(reader)
         title_line = list(map(lambda s:s.strip(), title_line))
@@ -273,7 +273,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
 
     # Open data file and tidy output file at once, so that we can stream data
     # directly from one to the other without having to store much.
-    with mt_open(input_filename, 'rU') as infile:
+    with mt_open(input_filename, 'r') as infile:
         with mt_open(output_filename, 'w') as outfile:
             # Write a header to the tidy output file.
             reader = csv.reader(infile)
@@ -599,16 +599,22 @@ def background_subtract(df, negative_control_wells):
     '''
     if type(negative_control_wells) == str:
         negative_control_wells = [negative_control_wells]
-    return_df = pd.DataFrame()
+    # return_df = pd.DataFrame()
+    return_dfs = []
     # Split the dataframe by channel and gain
     for channel in df.Channel.unique():
         channel_df = df[df.Channel == channel]
         for gain in channel_df.Gain.unique():
             condition_df = channel_df[channel_df.Gain == gain]
-            neg_ctrl_df  = pd.DataFrame()
+            # neg_ctrl_df  = pd.DataFrame()
+            # for well in negative_control_wells:
+            #     well_df = condition_df[condition_df.Well == well]
+            #     neg_ctrl_df = neg_ctrl_df.append(well_df)
+            neg_ctrl_dfs = []
             for well in negative_control_wells:
                 well_df = condition_df[condition_df.Well == well]
-                neg_ctrl_df = neg_ctrl_df.append(well_df)
+                neg_ctrl_dfs.append(well_df)
+            neg_ctrl_df = pd.concat(neg_ctrl_dfs)
             grouped_neg_ctrl = neg_ctrl_df.groupby(["Time (sec)"])
             avg_neg_ctrl = grouped_neg_ctrl.aggregate(np.average)
             avg_neg_ctrl.sort_index(inplace = True)
@@ -621,7 +627,8 @@ def background_subtract(df, negative_control_wells):
                 well_df.reset_index(inplace = True)
                 well_df.Measurement = well_df.Measurement - \
                                       avg_neg_ctrl.Measurement
-                return_df = return_df.append(well_df)
+                return_dfs.append(well_df)
+    return_df = pd.concat(return_dfs)
     return return_df
 
 
