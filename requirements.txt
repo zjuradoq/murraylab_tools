@@ -2,7 +2,6 @@ dnaplotlib
 openpyxl
 scipy>=1.0
 pydna
-biopython==1.70
 xlrd>=1.0.0
 pandas>=0.24
 matplotlib>=3.0

@@ -20,6 +20,8 @@ from ..utils import *
 import pkg_resources
 from datetime import datetime
 from copy import deepcopy as dc
+from ast import literal_eval as make_tuple
+
 
 ####################
 # Plate Reader IDs #
@@ -156,20 +158,40 @@ def raw_to_uM(calibration_dict, raw, protein, biotek, gain, volume):
     '''
     protein = standard_channel_name(protein, calibration_dict)
     if not protein in calibration_dict or \
-       not biotek in calibration_dict[protein] or \
-       not gain in calibration_dict[protein][biotek]:
+       not biotek in calibration_dict[protein]:
        return None
+    if not gain in calibration_dict[protein][biotek]:
+        if not gain in calibration_dict[protein][biotek][0]:
+            return None
     # Note that volume is in uL!
     if raw == "OVRFLW":
         raw = np.infty
-    return float(raw) * 10.0 / calibration_dict[protein][biotek][gain] / volume
+    # if tuple form of calibration fit is provided, incorporate that information
+    this_fluor_biotek_gain = calibration_dict[protein][biotek][gain]
+    if (type(this_fluor_biotek_gain) == str) or \
+        (type(this_fluor_biotek_gain) == tuple):
+        # if reading calibration gain for fluorophore, biotek for first time
+        if type(this_fluor_biotek_gain) == str:
+            # convert string to tuple
+            calibration_dict[protein][biotek][gain] = make_tuple(this_fluor_biotek_gain)
+        # if only slope is given, use that
+        if len(calibration_dict[protein][biotek][gain]) == 1:
+            return float(raw) * 10.0 / calibration_dict[protein][biotek][gain][0] / volume
+        # if slope and intercept are given
+        if len(calibration_dict[protein][biotek][gain]) == 2:
+            slope = calibration_dict[protein][biotek][gain][0]
+            intercept = calibration_dict[protein][biotek][gain][1]
+            return ((float(raw) * 10.0 / volume) - intercept)/slope
+    # if int/float form of calibration fit is provided, proceed using only slope
+    else:
+        return float(raw) * 10.0 / calibration_dict[protein][biotek][gain] / volume
 
 ReadSet = collections.namedtuple('ReadSet', ['name', 'excitation', 'emission',
                                              'gain'])
 
 def read_supplementary_info(input_filename):
     info = dict()
-    with mt_open(input_filename, 'rU') as infile:
+    with mt_open(input_filename, 'r') as infile:
         reader = csv.reader(infile)
         title_line = next(reader)
         title_line = list(map(lambda s:s.strip(), title_line))
@@ -251,7 +273,7 @@ def tidy_biotek_data(input_filename, supplementary_filename = None,
 
     # Open data file and tidy output file at once, so that we can stream data
     # directly from one to the other without having to store much.
-    with mt_open(input_filename, 'rU') as infile:
+    with mt_open(input_filename, 'r') as infile:
         with mt_open(output_filename, 'w') as outfile:
             # Write a header to the tidy output file.
             reader = csv.reader(infile)
@@ -577,16 +599,22 @@ def background_subtract(df, negative_control_wells):
     '''
     if type(negative_control_wells) == str:
         negative_control_wells = [negative_control_wells]
-    return_df = pd.DataFrame()
+    # return_df = pd.DataFrame()
+    return_dfs = []
     # Split the dataframe by channel and gain
     for channel in df.Channel.unique():
         channel_df = df[df.Channel == channel]
         for gain in channel_df.Gain.unique():
             condition_df = channel_df[channel_df.Gain == gain]
-            neg_ctrl_df  = pd.DataFrame()
+            # neg_ctrl_df  = pd.DataFrame()
+            # for well in negative_control_wells:
+            #     well_df = condition_df[condition_df.Well == well]
+            #     neg_ctrl_df = neg_ctrl_df.append(well_df)
+            neg_ctrl_dfs = []
             for well in negative_control_wells:
                 well_df = condition_df[condition_df.Well == well]
-                neg_ctrl_df = neg_ctrl_df.append(well_df)
+                neg_ctrl_dfs.append(well_df)
+            neg_ctrl_df = pd.concat(neg_ctrl_dfs)
             grouped_neg_ctrl = neg_ctrl_df.groupby(["Time (sec)"])
             avg_neg_ctrl = grouped_neg_ctrl.aggregate(np.average)
             avg_neg_ctrl.sort_index(inplace = True)
@@ -599,7 +627,8 @@ def background_subtract(df, negative_control_wells):
                 well_df.reset_index(inplace = True)
                 well_df.Measurement = well_df.Measurement - \
                                       avg_neg_ctrl.Measurement
-                return_df = return_df.append(well_df)
+                return_dfs.append(well_df)
+    return_df = pd.concat(return_dfs)
     return return_df
 
 
