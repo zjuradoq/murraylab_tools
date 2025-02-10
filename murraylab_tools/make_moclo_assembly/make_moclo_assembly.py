@@ -21,6 +21,7 @@ from Bio.Restriction import BsaI
 from Bio.Restriction import BbsI
 from Bio.Restriction import AarI
 from Bio.Restriction import Esp3I
+from Bio.Seq import Seq
 from copy import deepcopy as dc
 import ipywidgets as widgets
 from collections import defaultdict
@@ -61,7 +62,7 @@ ENDDICT = { \
 "CCAGGATACATAGATTACCACAACTCCGAGCCCTTCCACC" : "X",\
 }
 #have a dictionary of the reverse complement too
-rcENDDICT = {str(Dseq(a).rc()):ENDDICT[a] for a in ENDDICT}
+rcENDDICT = {str(Seq(a).reverse_complement()):ENDDICT[a] for a in ENDDICT}
 
 prevplate = None
 selenzyme = "gibson" #which enzyme to assemble everything with
